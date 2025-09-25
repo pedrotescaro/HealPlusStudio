@@ -54,6 +54,7 @@ export function ProfessionalDashboard() {
   const { t } = useTranslation();
   const router = useRouter();
   const { toast } = useToast();
+  const { firestore } = useFirebase();
   
   const [recordToDelete, setRecordToDelete] = useState<string | null>(null);
   const [recordToView, setRecordToView] = useState<StoredAnamnesis | null>(null);
@@ -125,9 +126,7 @@ export function ProfessionalDashboard() {
   const recentAnamneses = useMemo(() => allAnamneses?.slice(0, 5) ?? [], [allAnamneses]);
 
   const handleDelete = async () => {
-    if (!recordToDelete || !user) return;
-    const { firestore } = useFirebase();
-    if (!firestore) return;
+    if (!recordToDelete || !user || !firestore) return;
 
     const docRef = doc(firestore, "users", user.uid, "anamnesis", recordToDelete);
     deleteDoc(docRef)

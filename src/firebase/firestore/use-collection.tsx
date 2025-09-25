@@ -72,19 +72,23 @@ export function useCollection<T = any>(
 
     try {
         let finalConstraints = [...constraints];
+        let baseQuery;
+
         if (isGroup) {
+            baseQuery = collectionGroup(firestore, pathOrCollectionGroupId);
             // For collection group queries, we MUST filter by the current user's ID
-            // to comply with security rules.
-            if (pathOrCollectionGroupId === 'reports' && user.role === 'patient') {
+            // to comply with security rules. This assumes a 'professionalId' or 'patientId' field.
+            if (user.role === 'patient') {
               finalConstraints.push(where('patientId', '==', user.uid));
             } else {
+              // Professionals see data they created.
               finalConstraints.push(where('professionalId', '==', user.uid));
             }
+        } else {
+            // This is a standard collection query, not a group query.
+            // The path should be the full path to the collection.
+            baseQuery = collection(firestore, pathOrCollectionGroupId);
         }
-        
-        const baseQuery = isGroup
-            ? collectionGroup(firestore, pathOrCollectionGroupId)
-            : collection(firestore, pathOrCollectionGroupId);
             
         return query(baseQuery, ...finalConstraints);
 
@@ -124,7 +128,7 @@ export function useCollection<T = any>(
         }
       },
       (error: FirestoreError) => {
-        const path: string = (memoizedQuery as unknown as InternalQuery)._query.path.canonicalString()
+        const path: string = (memoizedQuery as unknown as InternalQuery)._query.path.toString()
 
         const contextualError = new FirestorePermissionError({
           operation: 'list',

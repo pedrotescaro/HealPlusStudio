@@ -36,7 +36,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirebase, useCollection } from "@/firebase";
 import { collection, query, orderBy, doc, deleteDoc, Timestamp, getDoc, where, collectionGroup } from "firebase/firestore";
 import { useTranslation } from "@/contexts/app-provider";
 import jsPDF from "jspdf";
@@ -67,16 +67,13 @@ export default function ReportsPage() {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [currentReportForPdf, setCurrentReportForPdf] = useState<StoredReport | null>(null);
 
-  const reportsQuery = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    if (user.role === 'professional') {
-      return query(collection(firestore, "users", user.uid, "reports"), orderBy("createdAt", "desc"));
-    } else {
-      return query(collectionGroup(firestore, "reports"), where("patientId", "==", user.uid), orderBy("createdAt", "desc"));
+  const { data: reports, isLoading: loading } = useCollection<StoredReport>(
+    'reports',
+    { 
+      isGroup: true, 
+      constraints: [orderBy("createdAt", "desc")]
     }
-  }, [user, firestore]);
-
-  const { data: reports, isLoading: loading } = useCollection<StoredReport>(reportsQuery as Query<StoredReport> | null);
+  );
   
   const handleDelete = async () => {
     if (!reportToDelete || !user || user.role !== 'professional' || !firestore) return;
