@@ -1,184 +1,141 @@
-/**
- * @fileOverview This ruleset enforces a strict user-ownership model for all data stored in Firestore.
- * All data is nested under `/users/{userId}`, ensuring that only the authenticated user can access their own data.
- *
- * @dataStructure
- * - `/users/{userId}`: Stores user profile information.
- * - `/users/{userId}/wounds/{woundId}`: Stores wound data for a specific user.
- * - `/users/{userId}/wounds/{woundId}/images/{imageId}`: Stores images associated with a wound.
- * - `/users/{userId}/appointments/{appointmentId}`: Stores appointment data for a specific user.
- * - `/users/{userId}/wounds/{woundId}/riskAssessments/{riskAssessmentId}`: Stores risk assessments for a specific wound.
- *
- * @keySecurityDecisions
- * - User listing is disallowed to prevent unauthorized data access.
- * - All write operations are restricted to the owner of the data.
- * - No data validation is performed beyond ownership checks to allow for rapid prototyping.
- *
- * @denormalizationForAuthorization Not applicable; path-based ownership is used throughout the data structure, eliminating the need for denormalization.
- * @structuralSegregation Not applicable; all data is private and user-specific.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Enforces user-ownership for the UserProfile document.
+     * @description Checks if the request is made by the owner of the resource.
+     * @param {string} userId The user ID to compare against the request's authentication UID.
+     * @return {bool} True if the user ID matches the request's authentication UID, false otherwise.
+     */
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the request is made by the owner of an existing resource.
+     * @param {string} userId The user ID to compare against the resource's user ID.
+     * @return {bool} True if the user ID matches the resource's user ID and the resource exists, false otherwise.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && exists(resource);
+    }
+
+    /**
+     * @description Checks if a user is signed in.
+     * @return {bool} True if the user is signed in, false otherwise.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Rules for the /users/{userId} collection.
      * @path /users/{userId}
-     * @allow (create) User with UID 'testUID' can create their own profile document at /users/testUID if request.auth.uid == 'testUID'.
-     * @deny (create) User with UID 'anotherUID' cannot create a profile document at /users/testUID.
-     * @allow (get) User with UID 'testUID' can get their own profile document at /users/testUID.
-     * @deny (get) User with UID 'anotherUID' cannot get the profile document at /users/testUID.
-     * @allow (update) User with UID 'testUID' can update their own profile document at /users/testUID.
-     * @deny (update) User with UID 'anotherUID' cannot update the profile document at /users/testUID.
-     * @allow (delete) User with UID 'testUID' can delete their own profile document at /users/testUID.
-     * @deny (delete) User with UID 'anotherUID' cannot delete the profile document at /users/testUID.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) User with UID 'user123' can create their profile at /users/user123.
+     * @deny (create) User with UID 'user123' cannot create profile at /users/anotherUser.
+     * @allow (get) User with UID 'user123' can get their profile at /users/user123.
+     * @deny (get) User with UID 'user123' cannot get profile at /users/anotherUser.
+     * @allow (update) User with UID 'user123' can update their profile at /users/user123.
+     * @deny (update) User with UID 'user123' cannot update profile at /users/anotherUser.
+     * @allow (delete) User with UID 'user123' can delete their profile at /users/user123.
+     * @deny (delete) User with UID 'user123' cannot delete profile at /users/anotherUser.
+     * @principle Enforces document ownership for writes and reads.
      */
     match /users/{userId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-      function isExistingOwner(userId) {
-        return isSignedIn() && isOwner(userId) && resource != null;
-      }
-
       allow get: if isOwner(userId);
-      allow list: if false;
-
+      allow list: if false; // User listing is not allowed.
       allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
     }
 
     /**
-     * @description Enforces user-ownership for Wound documents.
+     * @description Rules for the /users/{userId}/wounds/{woundId} collection.
      * @path /users/{userId}/wounds/{woundId}
-     * @allow (create) User with UID 'testUID' can create a wound document under /users/testUID/wounds/someWound if request.auth.uid == 'testUID'.
-     * @deny (create) User with UID 'anotherUID' cannot create a wound document under /users/testUID/wounds/someWound.
-     * @allow (get) User with UID 'testUID' can get their own wound document at /users/testUID/wounds/someWound.
-     * @deny (get) User with UID 'anotherUID' cannot get the wound document at /users/testUID/wounds/someWound.
-     * @allow (update) User with UID 'testUID' can update their own wound document at /users/testUID/wounds/someWound.
-     * @deny (update) User with UID 'anotherUID' cannot update the wound document at /users/testUID/wounds/someWound.
-     * @allow (delete) User with UID 'testUID' can delete their own wound document at /users/testUID/wounds/someWound.
-     * @deny (delete) User with UID 'anotherUID' cannot delete the wound document at /users/testUID/wounds/someWound.
-     * @principle Enforces document ownership for writes.
+     * @allow (create) User with UID 'user123' can create a wound at /users/user123/wounds/wound456.
+     * @deny (create) User with UID 'user123' cannot create a wound at /users/anotherUser/wounds/wound456.
+     * @allow (get) User with UID 'user123' can get their wound at /users/user123/wounds/wound456.
+     * @deny (get) User with UID 'user123' cannot get wound at /users/anotherUser/wounds/wound456.
+     * @allow (update) User with UID 'user123' can update their wound at /users/user123/wounds/wound456.
+     * @deny (update) User with UID 'user123' cannot update wound at /users/anotherUser/wounds/wound456.
+     * @allow (delete) User with UID 'user123' can delete their wound at /users/user123/wounds/wound456.
+     * @deny (delete) User with UID 'user123' cannot delete wound at /users/anotherUser/wounds/wound456.
+     * @principle Enforces document ownership for writes and reads.
      */
     match /users/{userId}/wounds/{woundId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-      function isExistingOwner(userId) {
-        return isSignedIn() && isOwner(userId) && resource != null;
-      }
-
       allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-
+      allow list: if false;
       allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
     }
 
     /**
-     * @description Enforces user-ownership for WoundImage documents.
+     * @description Rules for the /users/{userId}/wounds/{woundId}/images/{imageId} collection.
      * @path /users/{userId}/wounds/{woundId}/images/{imageId}
-     * @allow (create) User with UID 'testUID' can create a wound image document under /users/testUID/wounds/someWound/images/someImage if request.auth.uid == 'testUID'.
-     * @deny (create) User with UID 'anotherUID' cannot create a wound image document under /users/testUID/wounds/someWound/images/someImage.
-     * @allow (get) User with UID 'testUID' can get their own wound image document at /users/testUID/wounds/someWound/images/someImage.
-     * @deny (get) User with UID 'anotherUID' cannot get the wound image document at /users/testUID/wounds/someWound/images/someImage.
-     * @allow (update) User with UID 'testUID' can update their own wound image document at /users/testUID/wounds/someWound/images/someImage.
-     * @deny (update) User with UID 'anotherUID' cannot update the wound image document at /users/testUID/wounds/someWound/images/someImage.
-     * @allow (delete) User with UID 'testUID' can delete their own wound image document at /users/testUID/wounds/someWound/images/someImage.
-     * @deny (delete) User with UID 'anotherUID' cannot delete the wound image document at /users/testUID/wounds/someWound/images/someImage.
-     * @principle Enforces document ownership for writes.
+     * @allow (create) User with UID 'user123' can create an image at /users/user123/wounds/wound456/images/image789.
+     * @deny (create) User with UID 'user123' cannot create an image at /users/anotherUser/wounds/wound456/images/image789.
+     * @allow (get) User with UID 'user123' can get their image at /users/user123/wounds/wound456/images/image789.
+     * @deny (get) User with UID 'user123' cannot get image at /users/anotherUser/wounds/wound456/images/image789.
+     * @allow (update) User with UID 'user123' can update their image at /users/user123/wounds/wound456/images/image789.
+     * @deny (update) User with UID 'user123' cannot update image at /users/anotherUser/wounds/wound456/images/image789.
+     * @allow (delete) User with UID 'user123' can delete their image at /users/user123/wounds/wound456/images/image789.
+     * @deny (delete) User with UID 'user123' cannot delete image at /users/anotherUser/wounds/wound456/images/image789.
+     * @principle Enforces document ownership for writes and reads.
      */
     match /users/{userId}/wounds/{woundId}/images/{imageId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-      function isExistingOwner(userId) {
-        return isSignedIn() && isOwner(userId) && resource != null;
-      }
-
       allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-
+      allow list: if false;
       allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
     }
 
     /**
-     * @description Enforces user-ownership for Appointment documents.
+     * @description Rules for the /users/{userId}/appointments/{appointmentId} collection.
      * @path /users/{userId}/appointments/{appointmentId}
-     * @allow (create) User with UID 'testUID' can create an appointment document under /users/testUID/appointments/someAppointment if request.auth.uid == 'testUID'.
-     * @deny (create) User with UID 'anotherUID' cannot create an appointment document under /users/testUID/appointments/someAppointment.
-     * @allow (get) User with UID 'testUID' can get their own appointment document at /users/testUID/appointments/someAppointment.
-     * @deny (get) User with UID 'anotherUID' cannot get the appointment document at /users/testUID/appointments/someAppointment.
-     * @allow (update) User with UID 'testUID' can update their own appointment document at /users/testUID/appointments/someAppointment.
-     * @deny (update) User with UID 'anotherUID' cannot update the appointment document at /users/testUID/appointments/someAppointment.
-     * @allow (delete) User with UID 'testUID' can delete their own appointment document at /users/testUID/appointments/someAppointment.
-     * @deny (delete) User with UID 'anotherUID' cannot delete the appointment document at /users/testUID/appointments/someAppointment.
-     * @principle Enforces document ownership for writes.
+     * @allow (create) User with UID 'user123' can create an appointment at /users/user123/appointments/appt456.
+     * @deny (create) User with UID 'user123' cannot create an appointment at /users/anotherUser/appointments/appt456.
+     * @allow (get) User with UID 'user123' can get their appointment at /users/user123/appointments/appt456.
+     * @deny (get) User with UID 'user123' cannot get appointment at /users/anotherUser/appointments/appt456.
+     * @allow (update) User with UID 'user123' can update their appointment at /users/user123/appointments/appt456.
+     * @deny (update) User with UID 'user123' cannot update appointment at /users/anotherUser/appointments/appt456.
+     * @allow (delete) User with UID 'user123' can delete their appointment at /users/user123/appointments/appt456.
+     * @deny (delete) User with UID 'user123' cannot delete appointment at /users/anotherUser/appointments/appt456.
+     * @principle Enforces document ownership for writes and reads.
      */
     match /users/{userId}/appointments/{appointmentId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-      function isExistingOwner(userId) {
-        return isSignedIn() && isOwner(userId) && resource != null;
-      }
-
       allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-
+      allow list: if false;
       allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
     }
 
     /**
-     * @description Enforces user-ownership for RiskAssessment documents.
+     * @description Rules for the /users/{userId}/wounds/{woundId}/riskAssessments/{riskAssessmentId} collection.
      * @path /users/{userId}/wounds/{woundId}/riskAssessments/{riskAssessmentId}
-     * @allow (create) User with UID 'testUID' can create a risk assessment document under /users/testUID/wounds/someWound/riskAssessments/someAssessment if request.auth.uid == 'testUID'.
-     * @deny (create) User with UID 'anotherUID' cannot create a risk assessment document under /users/testUID/wounds/someWound/riskAssessments/someAssessment.
-     * @allow (get) User with UID 'testUID' can get their own risk assessment document at /users/testUID/wounds/someWound/riskAssessments/someAssessment.
-     * @deny (get) User with UID 'anotherUID' cannot get the risk assessment document at /users/testUID/wounds/someWound/riskAssessments/someAssessment.
-     * @allow (update) User with UID 'testUID' can update their own risk assessment document at /users/testUID/wounds/someWound/riskAssessments/someAssessment.
-     * @deny (update) User with UID 'anotherUID' cannot update the risk assessment document at /users/testUID/wounds/someWound/riskAssessments/someAssessment.
-     * @allow (delete) User with UID 'testUID' can delete their own risk assessment document at /users/testUID/wounds/someWound/riskAssessments/someAssessment.
-     * @deny (delete) User with UID 'anotherUID' cannot delete the risk assessment document at /users/testUID/wounds/someWound/riskAssessments/someAssessment.
-     * @principle Enforces document ownership for writes.
+     * @allow (create) User with UID 'user123' can create a risk assessment at /users/user123/wounds/wound456/riskAssessments/risk789.
+     * @deny (create) User with UID 'user123' cannot create a risk assessment at /users/anotherUser/wounds/wound456/riskAssessments/risk789.
+     * @allow (get) User with UID 'user123' can get their risk assessment at /users/user123/wounds/wound456/riskAssessments/risk789.
+     * @deny (get) User with UID 'user123' cannot get risk assessment at /users/anotherUser/wounds/wound456/riskAssessments/risk789.
+     * @allow (update) User with UID 'user123' can update their risk assessment at /users/user123/wounds/wound456/riskAssessments/risk789.
+     * @deny (update) User with UID 'user123' cannot update risk assessment at /users/anotherUser/wounds/wound456/riskAssessments/risk789.
+     * @allow (delete) User with UID 'user123' can delete their risk assessment at /users/user123/wounds/wound456/riskAssessments/risk789.
+     * @deny (delete) User with UID 'user123' cannot delete risk assessment at /users/anotherUser/wounds/wound456/riskAssessments/risk789.
+     * @principle Enforces document ownership for writes and reads.
      */
     match /users/{userId}/wounds/{woundId}/riskAssessments/{riskAssessmentId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-      function isExistingOwner(userId) {
-        return isSignedIn() && isOwner(userId) && resource != null;
-      }
-
       allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-
+      allow list: if false;
       allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
+    }
+
+    // Allow server to bypass security rules
+    match /admin/{document=**} {
+      allow read, write: if request.auth.uid == "service-account";
     }
   }
 }
