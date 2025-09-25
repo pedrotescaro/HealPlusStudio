@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -54,7 +54,7 @@ const AppleIcon = () => (
 
 export function LoginForm() {
   const router = useRouter();
-  const { login, loginWithGoogle, loginWithMicrosoft, loginWithApple, setUserRoleAndRefresh } = useAuth();
+  const { login, loginWithGoogle, loginWithMicrosoft, loginWithApple, loginAnonymously, setUserRoleAndRefresh } = useAuth();
   const { firestore } = useFirebase();
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -62,6 +62,7 @@ export function LoginForm() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [microsoftLoading, setMicrosoftLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
+  const [anonymousLoading, setAnonymousLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [pendingUser, setPendingUser] = useState<UserCredential | null>(null);
@@ -75,6 +76,10 @@ export function LoginForm() {
   });
 
   const checkUserRoleAndProceed = async (userCredential: UserCredential) => {
+    if (!firestore) {
+        toast({ title: "Erro de Inicialização", description: "O serviço de banco de dados não está pronto.", variant: "destructive" });
+        return;
+    }
     const userDocRef = doc(firestore, "users", userCredential.user.uid);
     const userDoc = await getDoc(userDocRef);
 
@@ -158,7 +163,21 @@ export function LoginForm() {
     }
   }
 
-
+  async function handleAnonymousClick() {
+    setAnonymousLoading(true);
+    try {
+      const userCredential = await loginAnonymously();
+      await checkUserRoleAndProceed(userCredential);
+    } catch (error: any) {
+        toast({
+            title: "Erro no Login Anônimo",
+            description: error.message || "Não foi possível entrar como visitante.",
+            variant: "destructive",
+        });
+    } finally {
+        setAnonymousLoading(false);
+    }
+  }
   
   async function handleDisclaimerAgree(isProfessional: boolean) {
     setShowDisclaimer(false);
@@ -241,7 +260,7 @@ export function LoginForm() {
         <Button 
           variant="outline" 
           onClick={handleGoogleClick} 
-          disabled={googleLoading || microsoftLoading || appleLoading}
+          disabled={googleLoading || microsoftLoading || appleLoading || anonymousLoading}
           className="flex items-center gap-2"
         >
           {googleLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <GoogleIcon />}
@@ -250,7 +269,7 @@ export function LoginForm() {
         <Button 
           variant="outline" 
           onClick={handleMicrosoftClick} 
-          disabled={googleLoading || microsoftLoading || appleLoading}
+          disabled={googleLoading || microsoftLoading || appleLoading || anonymousLoading}
           className="flex items-center gap-2"
         >
           {microsoftLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MicrosoftIcon />}
@@ -259,18 +278,22 @@ export function LoginForm() {
         <Button 
           variant="outline" 
           onClick={handleAppleClick} 
-          disabled={googleLoading || microsoftLoading || appleLoading}
+          disabled={googleLoading || microsoftLoading || appleLoading || anonymousLoading}
           className="flex items-center gap-2 col-span-2"
         >
           {appleLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <AppleIcon />}
           <span className="hidden sm:inline">Apple</span>
         </Button>
       </div>
-      <div className="mt-4 text-center text-sm text-muted-foreground">
-        {t.dontHaveAccount}{" "}
-        <Link href="/signup" className="font-medium text-primary hover:underline">
-          {t.signUp}
-        </Link>
+       <div className="mt-4 text-center text-sm text-muted-foreground">
+        <button
+          onClick={handleAnonymousClick}
+          disabled={anonymousLoading}
+          className="font-medium text-primary hover:underline"
+        >
+          {anonymousLoading ? <Loader2 className="inline-block mr-2 h-4 w-4 animate-spin" /> : null}
+          Entrar como Visitante
+        </button>
       </div>
       <DisclaimerDialog 
         isOpen={showDisclaimer} 
