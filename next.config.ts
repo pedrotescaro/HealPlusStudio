@@ -42,6 +42,15 @@ const nextConfig: NextConfig = {
       }
     ],
   },
+  devIndicators: {
+    buildActivity: false
+  },
+  experimental: {
+    // This is required to suppress the warning about cross-origin requests.
+    // In a real production environment, you would want to be more specific
+    // with the allowed origins.
+    allowedDevOrigins: ["*"],
+  }
 };
 
 export default nextConfig;
