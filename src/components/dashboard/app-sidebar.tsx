@@ -61,12 +61,10 @@ export default function AppSidebar({ className, onLinkClick }: AppSidebarProps) 
 
   const professionalNavItems: NavItem[] = [
     { href: "/dashboard", icon: LayoutDashboard, label: t.dashboard, isActive: true },
-    { href: "/dashboard/anamnesis", icon: ClipboardList, label: t.newAnamnesis, badge: "Novo" },
+    { href: "/anamnesis", icon: ClipboardList, label: t.newAnamnesis, badge: "Novo" },
     { href: "/dashboard/agenda", icon: Calendar, label: t.agenda },
     { href: "/dashboard/reports", icon: Archive, label: t.myReports },
     { href: "/dashboard/compare-reports", icon: CopyCheck, label: t.compareReports, badge: "Pro" },
-    { href: "/dashboard/analytics", icon: BarChart3, label: "Analytics" },
-    { href: "/dashboard/chat", icon: MessageSquare, label: "Chat", badge: "AI" },
     { href: "/dashboard/profile", icon: User, label: t.profile },
   ];
 

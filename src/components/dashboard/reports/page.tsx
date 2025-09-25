@@ -91,7 +91,7 @@ export default function ReportsPage() {
         })
         .catch(serverError => {
             const permissionError = new FirestorePermissionError({
-              path: (reportsQuery as Query).path,
+              path: (reportsQuery as any).path,
               operation: 'list'
             });
             errorEmitter.emit('permission-error', permissionError);
