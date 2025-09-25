@@ -485,8 +485,8 @@ export function ProfessionalDashboard() {
               </div>
               <p className="text-sm text-muted-foreground">Pacientes únicos</p>
               <p className="text-xs text-muted-foreground mt-1">
-                {dashboardStats.totalEvaluations > 0 
-                  ? `${Math.round(dashboardStats.totalEvaluations / dashboardStats.totalPatients)} avaliações/paciente`
+                {dashboardStats.totalEvaluations > 0 && dashboardStats.totalPatients > 0
+                  ? `${(dashboardStats.totalEvaluations / dashboardStats.totalPatients).toFixed(1)} avaliações/paciente`
                   : '0 avaliações/paciente'
                 }
               </p>
