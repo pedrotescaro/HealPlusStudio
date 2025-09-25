@@ -225,7 +225,7 @@ export function CatSupport({ currentPage }: { currentPage: string }) {
             className="rounded-full h-16 w-16 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-2xl hover:shadow-primary/25 transition-all duration-300 border-2 border-white/20"
           >
             <Cat className="h-8 w-8 text-white" />
-            <span className="sr-only">{t.chat}</span>
+            <span className="sr-only">Chat</span>
           </Button>
           <motion.div
             className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full"
@@ -359,4 +359,4 @@ export function CatSupport({ currentPage }: { currentPage: string }) {
       </PopoverContent>
     </Popover>
   );
-}  
+}
