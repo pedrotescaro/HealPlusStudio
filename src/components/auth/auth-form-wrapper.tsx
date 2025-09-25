@@ -3,9 +3,7 @@
 import { ReactNode } from "react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
-import { ChevronLeft } from "lucide-react";
 import { SocialLogins } from "./social-logins";
 
 interface AuthFormWrapperProps {
@@ -22,53 +20,7 @@ export function AuthFormWrapper({
   showSocialLogins,
 }: AuthFormWrapperProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex relative">
-      <div className="absolute top-4 right-4 z-10">
-        <Button
-          variant="ghost"
-          size="sm"
-          asChild
-          className="text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-300"
-        >
-          <Link href="/" className="flex items-center gap-2">
-            <ChevronLeft className="h-4 w-4" />
-            <span className="hidden sm:inline">Voltar</span>
-          </Link>
-        </Button>
-      </div>
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent flex-col justify-center items-center p-8 xl:p-12">
-        <div className="max-w-md text-center space-y-6">
-          <Logo />
-          <div className="space-y-4">
-            <h1 className="text-3xl xl:text-4xl font-bold text-foreground">
-              Bem-vindo ao <span className="text-primary">Heal+</span>
-            </h1>
-            <p className="text-base xl:text-lg text-muted-foreground">
-              A plataforma inteligente para gestão e análise de feridas com
-              tecnologia de ponta.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-primary rounded-full"></div>
-              <span>Análise com IA</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-primary rounded-full"></div>
-              <span>Relatórios Automáticos</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-primary rounded-full"></div>
-              <span>Acompanhamento Médico</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-primary rounded-full"></div>
-              <span>Histórico Completo</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-4 sm:p-6 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex flex-col justify-center items-center p-4 sm:p-6 md:p-8">
         <div className="w-full max-w-sm sm:max-w-md space-y-6 sm:space-y-8">
           <div className="lg:hidden text-center">
             <Logo />
@@ -109,7 +61,6 @@ export function AuthFormWrapper({
             </p>
           )}
         </div>
-      </div>
     </div>
   );
 }
