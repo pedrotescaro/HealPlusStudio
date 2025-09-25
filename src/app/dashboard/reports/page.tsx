@@ -76,7 +76,7 @@ export default function ReportsPage() {
     }
   }, [user, firestore]);
 
-  const { data: reports, isLoading: loading } = useCollection<StoredReport>(reportsQuery);
+  const { data: reports, isLoading: loading } = useCollection<StoredReport>(reportsQuery as Query<StoredReport> | null);
   
   const handleDelete = async () => {
     if (!reportToDelete || !user || user.role !== 'professional' || !firestore) return;
