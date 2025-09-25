@@ -18,6 +18,11 @@ export function initializeFirebase() {
       // Attempt to initialize via Firebase App Hosting environment variables
       firebaseApp = initializeApp();
       console.log('Firebase initialized with App Hosting environment variables');
+      console.log('App Hosting config:', {
+        projectId: firebaseApp.options.projectId,
+        databaseURL: firebaseApp.options.databaseURL,
+        authDomain: firebaseApp.options.authDomain
+      });
     } catch (e) {
       // Only warn in production because it's normal to use the firebaseConfig to initialize
       // during development
@@ -26,6 +31,11 @@ export function initializeFirebase() {
       }
       firebaseApp = initializeApp(firebaseConfig);
       console.log('Firebase initialized with config object');
+      console.log('Config object:', {
+        projectId: firebaseApp.options.projectId,
+        databaseURL: firebaseApp.options.databaseURL,
+        authDomain: firebaseApp.options.authDomain
+      });
     }
 
     return getSdks(firebaseApp);
@@ -37,12 +47,9 @@ export function initializeFirebase() {
 
 export function getSdks(firebaseApp: FirebaseApp) {
   let database = null;
-  try {
-    database = getDatabase(firebaseApp);
-    console.log('Realtime Database initialized successfully');
-  } catch (error) {
-    console.warn('Realtime Database not available:', error);
-  }
+  
+  // Skip Realtime Database initialization for now to avoid errors
+  console.log('Skipping Realtime Database initialization to avoid URL parsing errors');
   
   const auth = getAuth(firebaseApp);
   const firestore = getFirestore(firebaseApp);
@@ -50,14 +57,19 @@ export function getSdks(firebaseApp: FirebaseApp) {
   console.log('Firebase SDKs initialized:', {
     auth: !!auth,
     firestore: !!firestore,
-    database: !!database
+    database: false, // Disabled temporarily
+    appOptions: {
+      projectId: firebaseApp.options.projectId,
+      databaseURL: firebaseApp.options.databaseURL,
+      authDomain: firebaseApp.options.authDomain
+    }
   });
   
   return {
     firebaseApp,
     auth,
     firestore,
-    database, // Realtime Database SDK (may be null if not available)
+    database, // Realtime Database SDK (disabled temporarily)
   };
 }
 

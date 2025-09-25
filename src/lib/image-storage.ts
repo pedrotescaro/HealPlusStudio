@@ -10,6 +10,11 @@ let realtimeDb: ReturnType<typeof getDatabase> | null = null;
 try {
   const { database } = initializeFirebase();
   realtimeDb = database;
+  if (database) {
+    console.log('ImageStorageService: Realtime Database initialized successfully');
+  } else {
+    console.warn('ImageStorageService: Realtime Database not available');
+  }
 } catch (e) {
   console.error("Failed to initialize Firebase Realtime Database in ImageStorageService:", e);
   realtimeDb = null;
