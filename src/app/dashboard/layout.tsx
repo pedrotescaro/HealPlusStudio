@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import AppSidebar from '@/components/dashboard/app-sidebar';
 import MobileNav from '@/components/dashboard/mobile-nav';
 import { useAuth } from '@/hooks/use-auth';
@@ -16,16 +16,19 @@ export default function DashboardLayout({
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.replace('/login');
-    }
-  }, [loading, user, router]);
-
-  if (loading || !user) {
-    return <LoadingPage message={!user ? "Redirecionando para login..." : "Autenticando..."} />;
+  if (loading) {
+    return <LoadingPage message="Autenticando..." />;
   }
 
+  if (!user) {
+    // A verificação de autenticação concluiu e não há usuário.
+    // O ideal é que o hook `useAuth` ou um middleware já tivesse redirecionado,
+    // mas fazemos um último redirecionamento aqui para garantir.
+    router.replace('/login');
+    return <LoadingPage message="Redirecionando para login..." />;
+  }
+
+  // Se chegou até aqui, o usuário está carregado e autenticado.
   return (
     <div className="flex min-h-screen w-full bg-muted/40">
       <div className="hidden md:flex">
