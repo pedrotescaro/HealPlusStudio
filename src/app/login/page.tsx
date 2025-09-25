@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "@/contexts/app-provider";
-import { SocialLogins } from "@/components/auth/social-logins";
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -71,7 +70,6 @@ export default function LoginPage() {
           <Card className="shadow-2xl border-0 bg-card/50 backdrop-blur-sm">
             <CardContent className="p-6 sm:p-8">
               <LoginForm />
-              <SocialLogins />
             </CardContent>
           </Card>
            <p className="text-center text-sm text-muted-foreground">
