@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Trash2, Eye, Loader2, FileDown } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   DropdownMenu,
@@ -36,8 +36,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { useFirebase, useCollection } from "@/firebase";
-import { collection, query, orderBy, doc, deleteDoc, Timestamp, getDoc, where, collectionGroup } from "firebase/firestore";
+import { useFirebase } from "@/firebase";
+import { collection, query, orderBy, doc, deleteDoc, Timestamp, getDoc, where, collectionGroup, getDocs } from "firebase/firestore";
 import { useTranslation } from "@/contexts/app-provider";
 import jsPDF from "jspdf";
 import autoTable from 'jspdf-autotable';
@@ -61,25 +61,44 @@ export default function ReportsPage() {
   const { toast } = useToast();
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { firestore } = useFirebase();
   const [reportToDelete, setReportToDelete] = useState<string | null>(null);
   const [reportToView, setReportToView] = useState<StoredReport | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [currentReportForPdf, setCurrentReportForPdf] = useState<StoredReport | null>(null);
+  const [reports, setReports] = useState<StoredReport[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const { data: reports, isLoading: loading } = useCollection<StoredReport>(
-    'reports',
-    { 
-      isGroup: true, 
-      constraints: user?.role === 'patient' 
-        ? [where("patientId", "==", user.uid), orderBy("createdAt", "desc")]
-        : [orderBy("createdAt", "desc")]
-    }
-  );
+  useEffect(() => {
+    const fetchReports = async () => {
+      if (!user || !firestore) {
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+
+      try {
+        let reportsQuery: Query;
+        if (user.role === 'professional') {
+          reportsQuery = query(collection(firestore, "users", user.uid, "reports"), orderBy("createdAt", "desc"));
+        } else {
+          reportsQuery = query(collectionGroup(firestore, "reports"), where("patientId", "==", user.uid), orderBy("createdAt", "desc"));
+        }
+        const querySnapshot = await getDocs(reportsQuery);
+        const fetchedReports = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredReport));
+        setReports(fetchedReports);
+      } catch (e) {
+        console.error("Failed to fetch reports:", e);
+        toast({ title: "Erro", description: "Não foi possível carregar os relatórios.", variant: "destructive" });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchReports();
+  }, [user, firestore, toast]);
   
   const handleDelete = async () => {
-    if (!reportToDelete || !user || user.role !== 'professional') return;
-    const { firestore } = useFirebase();
-    if (!firestore) return;
+    if (!reportToDelete || !user || user.role !== 'professional' || !firestore) return;
     
     const docRef = doc(firestore, "users", user.uid, "reports", reportToDelete);
     
@@ -89,6 +108,7 @@ export default function ReportsPage() {
           title: t.deleteReportTitle,
           description: t.deleteReportDescription,
         });
+        setReports(prev => prev.filter(r => r.id !== reportToDelete));
       })
       .catch((serverError) => {
         const permissionError = new FirestorePermissionError({
@@ -103,10 +123,7 @@ export default function ReportsPage() {
   };
 
   const handleSavePdf = async (report: StoredReport | null) => {
-    if (!report || !user) return;
-    const { firestore } = useFirebase();
-    if (!firestore) return;
-
+    if (!report || !user || !firestore) return;
     setCurrentReportForPdf(report);
     setPdfLoading(true);
 

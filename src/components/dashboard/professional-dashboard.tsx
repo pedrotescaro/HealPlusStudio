@@ -38,8 +38,8 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { useFirebase, useCollection } from "@/firebase";
-import { collection, query, orderBy, limit, doc, deleteDoc } from "firebase/firestore";
+import { useFirebase } from "@/firebase";
+import { collection, query, orderBy, limit, doc, deleteDoc, getDocs } from "firebase/firestore";
 import { ActivitySummaryChart } from "@/components/dashboard/activity-summary-chart";
 import { useTranslation } from "@/contexts/app-provider";
 import { AnamnesisDetailsView } from "@/components/dashboard/anamnesis-details-view";
@@ -67,63 +67,70 @@ export function ProfessionalDashboard() {
     pendingEvaluations: 0,
     thisMonthEvaluations: 0
   });
+  const [recentAnamneses, setRecentAnamneses] = useState<StoredAnamnesis[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const { data: allAnamneses, isLoading: anamnesisLoading } = useCollection<StoredAnamnesis>(
-    'anamnesis',
-    { isGroup: true, constraints: [orderBy("data_consulta", "desc")] }
-  );
-
-  const { data: allReports, isLoading: reportsLoading } = useCollection(
-    'reports',
-    { isGroup: true }
-  );
-
-  const { data: allComparisons, isLoading: comparisonsLoading } = useCollection(
-    'comparisons',
-    { isGroup: true }
-  );
-
-  const loading = anamnesisLoading || reportsLoading || comparisonsLoading;
 
   useEffect(() => {
-    if (loading || !allAnamneses) return;
+    const fetchData = async () => {
+      if (!user || !firestore) {
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      try {
+        const anamnesisQuery = query(collection(firestore, "users", user.uid, "anamnesis"), orderBy("data_consulta", "desc"));
+        const reportsQuery = query(collection(firestore, "users", user.uid, "reports"));
+        const comparisonsQuery = query(collection(firestore, "users", user.uid, "comparisons"));
+        
+        const [anamnesisSnapshot, reportsSnapshot, comparisonsSnapshot] = await Promise.all([
+          getDocs(anamnesisQuery),
+          getDocs(reportsQuery),
+          getDocs(comparisonsQuery)
+        ]);
 
-    try {
-      const anamnesisCount = allAnamneses.length;
-      const reportsCount = allReports?.length ?? 0;
-      const comparisonsCount = allComparisons?.length ?? 0;
-      
-      const uniquePatients = new Set(allAnamneses.map(record => record.nome_cliente)).size;
-      
-      const currentMonth = new Date().getMonth();
-      const currentYear = new Date().getFullYear();
-      const thisMonthEvaluations = allAnamneses.filter(record => {
-        const recordDate = new Date(record.data_consulta);
-        return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
-      }).length;
+        const allAnamneses = anamnesisSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredAnamnesis));
+        
+        const anamnesisCount = allAnamneses.length;
+        const reportsCount = reportsSnapshot.size;
+        const comparisonsCount = comparisonsSnapshot.size;
+        
+        const uniquePatients = new Set(allAnamneses.map(record => record.nome_cliente)).size;
+        
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+        const thisMonthEvaluations = allAnamneses.filter(record => {
+          const recordDate = new Date(record.data_consulta);
+          return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
+        }).length;
 
-      setActivityData([
-          { name: "completedForms", value: anamnesisCount },
-          { name: "generatedReports", value: reportsCount },
-          { name: "comparisons", value: comparisonsCount },
-      ]);
+        setRecentAnamneses(allAnamneses.slice(0, 5));
 
-      setDashboardStats({
-        totalPatients: uniquePatients,
-        totalEvaluations: anamnesisCount,
-        totalReports: reportsCount,
-        totalComparisons: comparisonsCount,
-        pendingEvaluations: 0, 
-        thisMonthEvaluations: thisMonthEvaluations
-      });
+        setActivityData([
+            { name: "completedForms", value: anamnesisCount },
+            { name: "generatedReports", value: reportsCount },
+            { name: "comparisons", value: comparisonsCount },
+        ]);
 
-    } catch (error) {
-      console.error("Error fetching dashboard data from Firestore: ", error);
-      toast({ title: t.errorTitle, description: t.dashboardErrorLoading, variant: "destructive" });
-    }
-  }, [allAnamneses, allReports, allComparisons, loading, toast, t]);
+        setDashboardStats({
+          totalPatients: uniquePatients,
+          totalEvaluations: anamnesisCount,
+          totalReports: reportsCount,
+          totalComparisons: comparisonsCount,
+          pendingEvaluations: 0, 
+          thisMonthEvaluations: thisMonthEvaluations
+        });
 
-  const recentAnamneses = useMemo(() => allAnamneses?.slice(0, 5) ?? [], [allAnamneses]);
+      } catch (error) {
+        console.error("Error fetching dashboard data from Firestore: ", error);
+        // Do not toast here, let the UI show a state.
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [user, firestore]);
 
   const handleDelete = async () => {
     if (!recordToDelete || !user || !firestore) return;
@@ -135,6 +142,11 @@ export function ProfessionalDashboard() {
           title: t.deleteRecordTitle,
           description: t.deleteRecordDescription,
         });
+        // Refresh data after deletion
+        const updatedAnamneses = recentAnamneses.filter(r => r.id !== recordToDelete);
+        setRecentAnamneses(updatedAnamneses);
+        setDashboardStats(prev => ({...prev, totalEvaluations: prev.totalEvaluations - 1}));
+
       })
       .catch((serverError) => {
         const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'delete' });
