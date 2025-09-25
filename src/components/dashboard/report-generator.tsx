@@ -25,6 +25,8 @@ import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import Link from "next/link";
 import { Input } from "../ui/input";
 import { getRisk, createAssessment, getAnalysis, fhirPush, fhirPull } from "@/lib/api-client";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 type StoredAnamnesis = AnamnesisFormValues & { id: string };
 
@@ -136,7 +138,7 @@ export function ReportGenerator() {
       setReport(result);
       
       if (user && firestore) {
-        await addDoc(collection(firestore, "users", user.uid, "reports"), {
+        const reportData = {
           anamnesisId: selectedAnamnesisId,
           patientName: selectedRecord.nome_cliente,
           reportContent: result.report,
@@ -144,16 +146,24 @@ export function ReportGenerator() {
           professionalId: user.uid,
           patientId: selectedRecord.patientId || "", 
           createdAt: serverTimestamp(),
-        });
-        toast({ title: "Relatório Gerado e Salvo", description: "O relatório foi gerado com sucesso." });
+        };
+        const collectionRef = collection(firestore, "users", user.uid, "reports");
+        
+        addDoc(collectionRef, reportData)
+            .then(() => {
+                toast({ title: "Relatório Gerado e Salvo", description: "O relatório foi gerado com sucesso." });
+            })
+            .catch(serverError => {
+                const permissionError = new FirestorePermissionError({
+                    path: collectionRef.path,
+                    operation: 'create',
+                    requestResourceData: reportData
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            });
       }
     } catch (error) {
       console.error("Error generating report:", error);
-      toast({
-        title: "Erro ao Salvar",
-        description: "Não foi possível salvar o relatório no banco de dados.",
-        variant: "destructive",
-      });
     } finally {
       setLoading(false);
     }
