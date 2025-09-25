@@ -45,6 +45,7 @@ import autoTable from 'jspdf-autotable';
 import type { AnamnesisFormValues } from "@/lib/anamnesis-schema";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
+import type { Query } from "firebase/firestore";
 
 interface StoredReport {
   id: string;
@@ -87,14 +88,15 @@ export default function ReportsPage() {
         .then(querySnapshot => {
           const fetchedReports = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredReport));
           setReports(fetchedReports);
-          setLoading(false);
         })
         .catch(serverError => {
             const permissionError = new FirestorePermissionError({
-              path: (reportsQuery as any)._query.path.canonicalString(), // simplified path
+              path: (reportsQuery as Query).path,
               operation: 'list'
             });
             errorEmitter.emit('permission-error', permissionError);
+        })
+        .finally(() => {
             setLoading(false);
         });
     };
