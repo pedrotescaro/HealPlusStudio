@@ -133,7 +133,7 @@ export default function ReportsPage() {
 
   const handleSavePdf = async (report: StoredReport | null) => {
     if (!report || !user || !firestore) return;
-    setCurrentReportForPdf(report); // Track which report is generating PDF
+    setCurrentReportForPdf(report);
     setPdfLoading(true);
 
     try {

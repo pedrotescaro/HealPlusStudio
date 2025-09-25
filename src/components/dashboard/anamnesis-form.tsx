@@ -52,6 +52,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { useFirebase } from "@/firebase";
 import { collection, addDoc, getDoc, doc, updateDoc, query, where, getDocs, limit } from "firebase/firestore";
 import { v4 as uuidv4 } from 'uuid';
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 export function AnamnesisForm() {
   const { toast } = useToast();
@@ -185,6 +187,8 @@ export function AnamnesisForm() {
     pele_perilesional_indurada: false,
     pele_perilesional_sensivel: false,
     pele_perilesional_edema: false,
+    
+    // R - Reparo
     observacoes: "",
     data_consulta: new Date().toISOString().split('T')[0],
     hora_consulta: new Date().toTimeString().slice(0, 5),
@@ -305,7 +309,6 @@ export function AnamnesisForm() {
 
     try {
         const usersRef = collection(firestore, "users");
-        // Create a query to find a user with a matching name or email, who also has the 'patient' role.
         const q = query(usersRef, where("role", "==", "patient"), where("name", "==", data.nome_cliente), limit(1));
         const querySnapshot = await getDocs(q);
 
@@ -322,40 +325,46 @@ export function AnamnesisForm() {
        data.patientId = `unregistered_${uuidv4()}`;
     }
 
-    // Keep the image as data URI or path - no need to save to storage
-    // The image will be stored directly in Firestore as part of the document
-
-    // Sanitize data to ensure no undefined values are sent to Firestore
     const sanitizedData = Object.fromEntries(
         Object.entries(data).map(([key, value]) => [key, value === undefined ? "" : value])
     );
 
-    try {
-      if (isEditMode && recordId) {
-        // Update existing record in Firestore
-        const docRef = doc(firestore, "users", user.uid, "anamnesis", recordId);
-        await updateDoc(docRef, sanitizedData);
-        toast({
-          title: "Formulário Atualizado",
-          description: "A ficha de anamnese foi atualizada com sucesso.",
+    if (isEditMode && recordId) {
+      const docRef = doc(firestore, "users", user.uid, "anamnesis", recordId);
+      updateDoc(docRef, sanitizedData)
+        .then(() => {
+            toast({
+                title: "Formulário Atualizado",
+                description: "A ficha de anamnese foi atualizada com sucesso.",
+            });
+            router.push("/dashboard/anamnesis-records");
+        })
+        .catch(serverError => {
+            const permissionError = new FirestorePermissionError({
+                path: docRef.path,
+                operation: 'update',
+                requestResourceData: sanitizedData
+            });
+            errorEmitter.emit('permission-error', permissionError);
         });
-        router.push("/dashboard/anamnesis-records");
-      } else {
-        // Create new record in Firestore
-        await addDoc(collection(firestore, "users", user.uid, "anamnesis"), sanitizedData);
-        toast({
-          title: "Formulário Salvo",
-          description: "A ficha de anamnese foi salva com sucesso no Firestore.",
+    } else {
+      const collectionRef = collection(firestore, "users", user.uid, "anamnesis");
+      addDoc(collectionRef, sanitizedData)
+        .then(() => {
+            toast({
+                title: "Formulário Salvo",
+                description: "A ficha de anamnese foi salva com sucesso no Firestore.",
+            });
+            form.reset(defaultValues);
+        })
+        .catch(serverError => {
+            const permissionError = new FirestorePermissionError({
+                path: collectionRef.path,
+                operation: 'create',
+                requestResourceData: sanitizedData
+            });
+            errorEmitter.emit('permission-error', permissionError);
         });
-        form.reset(defaultValues);
-      }
-    } catch (error: any) {
-       toast({
-        title: "Erro ao Salvar",
-        description: error.message || "Não foi possível salvar a ficha no Firestore.",
-        variant: "destructive",
-      });
-      console.error("Failed to save anamnesis to Firestore", error);
     }
   }
 
