@@ -1,3 +1,4 @@
+
 declare module 'react' {
   export function useEffect(effect: () => void | (() => void), deps?: any[]): void;
   export function useState<T>(initialState?: T | (() => T)): [T, (value: T | ((prev: T) => T)) => void];
@@ -61,7 +62,6 @@ declare module 'lucide-react' {
   export const Archive: any;
   export const CopyCheck: any;
   export const Users: any;
-  export const ChevronRight: any;
   export const Menu: any;
   export const PlusCircle: any;
   export const MoreHorizontal: any;
@@ -95,7 +95,6 @@ declare module 'lucide-react' {
   export const Award: any;
   export const Heart: any;
   export const Activity: any;
-  export const MessageCircle: any;
   export const Linkedin: any;
   export const Youtube: any;
   export const Instagram: any;
@@ -103,6 +102,7 @@ declare module 'lucide-react' {
   export const ChevronDown: any;
   export const ChevronUp: any;
   export const ChevronLeft: any;
+  export const ChevronRight: any;
   export const Crown: any;
   export const UserCheck: any;
   export const Lock: any;
@@ -155,4 +155,15 @@ declare module 'react-hook-form' {
 
 declare global {
   const process: any;
+}
+
+/// <reference types="react" />
+/// <reference types="react-dom" />
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      [elemName: string]: any;
+    }
+  }
 }
