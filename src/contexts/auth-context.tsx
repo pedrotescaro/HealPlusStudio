@@ -25,7 +25,6 @@ interface AuthContextType {
   signup: (name:string, email: string, pass: string) => Promise<UserCredential>;
   logout: () => Promise<void>;
   loginWithGoogle: () => Promise<UserCredential>;
-  loginWithMicrosoft: () => Promise<UserCredential>;
   loginWithApple: () => Promise<UserCredential>;
   setUserRoleAndRefresh: (user: User, role: 'professional' | 'patient') => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -97,7 +96,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const loginWithGoogle = () => socialLogin(new GoogleAuthProvider());
-  const loginWithMicrosoft = () => socialLogin(new OAuthProvider('microsoft.com'));
   const loginWithApple = () => socialLogin(new OAuthProvider('apple.com'));
 
   const setUserRoleAndRefresh = async (userToUpdate: User, role: 'professional' | 'patient') => {
@@ -115,7 +113,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout, loginWithGoogle, loginWithMicrosoft, loginWithApple, setUserRoleAndRefresh, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout, loginWithGoogle, loginWithApple, setUserRoleAndRefresh, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
