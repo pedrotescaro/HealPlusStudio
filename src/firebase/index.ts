@@ -34,11 +34,18 @@ export function initializeFirebase() {
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
+  let database = null;
+  try {
+    database = getDatabase(firebaseApp);
+  } catch (error) {
+    console.warn('Realtime Database not available:', error);
+  }
+  
   return {
     firebaseApp,
     auth: getAuth(firebaseApp),
     firestore: getFirestore(firebaseApp),
-    database: getDatabase(firebaseApp), // Add Realtime Database SDK
+    database, // Realtime Database SDK (may be null if not available)
   };
 }
 

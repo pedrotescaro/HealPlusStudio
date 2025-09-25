@@ -12,6 +12,7 @@ try {
   realtimeDb = database;
 } catch (e) {
   console.error("Failed to initialize Firebase Realtime Database in ImageStorageService:", e);
+  realtimeDb = null;
 }
 
 
@@ -42,19 +43,24 @@ export class ImageStorageService {
     metadata: { fileName: string; mimeType: string }
   ): Promise<string> {
     if (!realtimeDb) {
-      throw new Error("Realtime Database is not initialized.");
+      throw new Error("Realtime Database is not initialized. Please check your Firebase configuration.");
     }
-    const imageId = uuidv4();
-    const imageRef = ref(realtimeDb, `images/${userId}/${path}/${imageId}`);
-    const storedImage: StoredImage = {
-      dataUri,
-      metadata: {
-        ...metadata,
-        createdAt: new Date().toISOString(),
-      },
-    };
-    await set(imageRef, storedImage);
-    return imageId;
+    try {
+      const imageId = uuidv4();
+      const imageRef = ref(realtimeDb, `images/${userId}/${path}/${imageId}`);
+      const storedImage: StoredImage = {
+        dataUri,
+        metadata: {
+          ...metadata,
+          createdAt: new Date().toISOString(),
+        },
+      };
+      await set(imageRef, storedImage);
+      return imageId;
+    } catch (error) {
+      console.error("Error saving image to Realtime Database:", error);
+      throw new Error("Failed to save image to database");
+    }
   }
 
   /**
@@ -65,7 +71,7 @@ export class ImageStorageService {
    */
   static async getImage(userId: string, imageId: string): Promise<StoredImage | null> {
     if (!realtimeDb) {
-      throw new Error("Realtime Database is not initialized.");
+      throw new Error("Realtime Database is not initialized. Please check your Firebase configuration.");
     }
     try {
       const snapshot = await get(child(ref(realtimeDb), `images/${userId}/profile-pictures/${imageId}`));
