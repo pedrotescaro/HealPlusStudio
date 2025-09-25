@@ -1,7 +1,7 @@
 
 "use client";
 
-import { createContext, useState, ReactNode } from 'react';
+import { createContext, useState, useEffect, ReactNode } from 'react';
 
 interface AuthContextType {
   user: any; 
@@ -17,11 +17,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   // Simulate auth logic
-  useState(() => {
-    setTimeout(() => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
       setLoading(false);
     }, 1000);
-  });
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const login = (userData: any) => {
     setUser(userData);
