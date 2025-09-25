@@ -1,29 +1,4 @@
-
-declare module 'react' {
-  export function useEffect(effect: () => void | (() => void), deps?: any[]): void;
-  export function useState<T>(initialState?: T | (() => T)): [T, (value: T | ((prev: T) => T)) => void];
-  export function useRef<T>(initialValue?: T): { current: T };
-  export interface ChangeEvent<T = Element> {
-    target: T;
-  }
-  export type ReactNode = any;
-  export const React: any;
-  export default React;
-}
-
-declare module 'firebase/firestore' {
-  export function collection(firestore: any, path: string, ...pathSegments: string[]): any;
-  export function query(collection: any, ...queryConstraints: any[]): any;
-  export function getDocs(query: any): Promise<any>;
-  export function orderBy(field: string, direction?: string): any;
-  export function where(field: string, op: string, value: any): any;
-  export function addDoc(collection: any, data: any): Promise<any>;
-  export function serverTimestamp(): any;
-  export function updateDoc(doc: any, data: any): Promise<any>;
-  export function deleteDoc(doc: any): Promise<any>;
-  export function doc(firestore: any, path: string, ...pathSegments: string[]): any;
-  export function limit(count: number): any;
-}
+// Minimal type declarations for external modules
 
 declare module 'lucide-react' {
   export const Loader2: any;

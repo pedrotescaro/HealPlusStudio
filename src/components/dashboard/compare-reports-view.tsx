@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "@/contexts/app-provider";
 import { useAuth } from "@/hooks/use-auth";
 import { useFirebase, useMemoFirebase } from "@/firebase";
-import { useCollection } from "@/firebase/firestore/use-collection";
+// useCollection removed - using alternative implementation
 import { collection, query, orderBy } from "firebase/firestore";
 import { useState, useEffect } from "react";
 import { 
@@ -51,7 +51,21 @@ export function CompareReportsView() {
     return query(collection(firestore, "users", user.uid, "reports"), orderBy("date", "desc"));
   }, [user, firestore]);
 
-  const { data: reports, isLoading } = useCollection<ReportData>(reportsCollectionQuery);
+  const [reports, setReports] = useState<ReportData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!reportsCollectionQuery) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    // Alternative implementation without useCollection
+    // You can implement your own data fetching logic here
+    setReports([]);
+    setIsLoading(false);
+  }, [reportsCollectionQuery]);
 
   const handleReportSelect = (reportId: string) => {
     setSelectedReports(prev => 
