@@ -34,6 +34,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { motion } from "framer-motion";
+
+
+const MotionButton = motion(Button);
+const MotionLink = motion(Link);
 
 export default function Home() {
   const { user, loading } = useAuth();
@@ -49,6 +54,51 @@ export default function Home() {
   if (loading || user) {
     return <LoadingPage message={user ? "Redirecionando para o dashboard..." : "Carregando Heal+..."} />;
   }
+  
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        duration: 0.5,
+      },
+    },
+  };
+
+  const pulseVariants = {
+    pulsing: {
+      scale: [1, 1.05, 1],
+      transition: {
+        duration: 2,
+        repeat: Infinity,
+        ease: "easeInOut",
+      },
+    },
+  };
+
+  const backgroundCircleVariants = {
+    animate: {
+      scale: [1, 1.2, 1],
+      opacity: [0.1, 0.2, 0.1],
+      transition: {
+        duration: 8,
+        repeat: Infinity,
+        ease: "easeInOut",
+      },
+    },
+  };
+
 
   // Render the landing page only if not loading and no user is logged in
   return (
@@ -57,13 +107,31 @@ export default function Home() {
       {/* Background Animation */}
       <div className="fixed inset-0 -z-10">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/5 via-transparent to-primary/10"></div>
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-primary/10 to-primary/5 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-r from-primary/5 to-primary/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-primary/5 to-transparent rounded-full blur-2xl animate-pulse delay-500"></div>
+        <motion.div
+          className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-primary/10 to-primary/5 rounded-full blur-3xl"
+          variants={backgroundCircleVariants}
+          animate="animate"
+        ></motion.div>
+        <motion.div
+          className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-r from-primary/5 to-primary/10 rounded-full blur-3xl"
+          variants={backgroundCircleVariants}
+          animate="animate"
+          style={{ animationDelay: '-2s' }}
+        ></motion.div>
+        <motion.div
+          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-primary/5 to-transparent rounded-full blur-2xl"
+          variants={backgroundCircleVariants}
+          animate="animate"
+          style={{ animationDelay: '-4s' }}
+        ></motion.div>
       </div>
 
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 shadow-lg shadow-primary/5">
+      <motion.header
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 shadow-lg shadow-primary/5">
         <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
           <div className="flex h-14 sm:h-16 lg:h-20 items-center justify-between">
             <div className="flex items-center">
@@ -88,68 +156,98 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </header>
+      </motion.header>
 
       {/* Hero Section */}
       <section className="relative py-12 sm:py-16 md:py-20 lg:py-24 xl:py-32 px-3 sm:px-4 md:px-6 lg:px-8 overflow-hidden">
         {/* Background decoration */}
         <div className="absolute inset-0 -z-10">
-          <div className="absolute top-1/4 left-1/4 w-48 sm:w-72 lg:w-96 h-48 sm:h-72 lg:h-96 bg-gradient-to-r from-primary/20 to-primary/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-64 sm:w-96 lg:w-[32rem] h-64 sm:h-96 lg:h-[32rem] bg-gradient-to-r from-primary/10 to-primary/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 sm:w-48 lg:w-64 h-32 sm:h-48 lg:h-64 bg-gradient-to-r from-primary/15 to-transparent rounded-full blur-2xl animate-pulse delay-500"></div>
+          <motion.div className="absolute top-1/4 left-1/4 w-48 sm:w-72 lg:w-96 h-48 sm:h-72 lg:h-96 bg-gradient-to-r from-primary/20 to-primary/10 rounded-full blur-3xl" variants={pulseVariants} animate="pulsing"></motion.div>
+          <motion.div className="absolute bottom-1/4 right-1/4 w-64 sm:w-96 lg:w-[32rem] h-64 sm:h-96 lg:h-[32rem] bg-gradient-to-r from-primary/10 to-primary/5 rounded-full blur-3xl" variants={pulseVariants} animate="pulsing" transition={{...pulseVariants.pulsing.transition, delay: 1}}></motion.div>
+          <motion.div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 sm:w-48 lg:w-64 h-32 sm:h-48 lg:h-64 bg-gradient-to-r from-primary/15 to-transparent rounded-full blur-2xl" variants={pulseVariants} animate="pulsing" transition={{...pulseVariants.pulsing.transition, delay: 0.5}}></motion.div>
         </div>
         
-        <div className="container mx-auto text-center">
+        <motion.div
+          className="container mx-auto text-center"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
           <div className="max-w-6xl mx-auto space-y-8 sm:space-y-12 lg:space-y-16">
             {/* Badge */}
-            <div className="inline-flex items-center px-4 sm:px-6 py-3 rounded-full bg-gradient-to-r from-primary/10 to-primary/5 text-primary text-sm sm:text-base font-semibold border border-primary/20 shadow-lg backdrop-blur-sm">
-              <Star className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-pulse" />
+            <motion.div
+              variants={itemVariants}
+              className="inline-flex items-center px-4 sm:px-6 py-3 rounded-full bg-gradient-to-r from-primary/10 to-primary/5 text-primary text-sm sm:text-base font-semibold border border-primary/20 shadow-lg backdrop-blur-sm">
+              <motion.div variants={pulseVariants} animate="pulsing">
+                <Star className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+              </motion.div>
               <span className="hidden sm:inline">Sistema Inteligente de Avaliação de Feridas</span>
               <span className="sm:hidden">Sistema Inteligente</span>
-            </div>
+            </motion.div>
             
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-bold text-foreground leading-tight">
+            <motion.h1
+              variants={itemVariants}
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-bold text-foreground leading-tight">
               A plataforma inteligente para{" "}
               <span className="bg-gradient-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent animate-gradient">
                 gestão de feridas
               </span>
-            </h1>
+            </motion.h1>
             
-            <p className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl text-muted-foreground max-w-4xl mx-auto leading-relaxed px-3 sm:px-4">
+            <motion.p
+              variants={itemVariants}
+              className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl text-muted-foreground max-w-4xl mx-auto leading-relaxed px-3 sm:px-4">
               Utilize IA com Gemini para análise de imagens, 
               geração de relatórios e acompanhamento de progressão de feridas.
-            </p>
+            </motion.p>
             
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 justify-center pt-4 sm:pt-6 px-3 sm:px-4">
-              <Button size="lg" asChild className="h-12 sm:h-14 md:h-16 px-6 sm:px-8 md:px-10 text-base sm:text-lg md:text-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-1">
+            <motion.div
+              variants={itemVariants}
+              className="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 justify-center pt-4 sm:pt-6 px-3 sm:px-4">
+              <MotionButton
+                size="lg"
+                asChild
+                className="h-12 sm:h-14 md:h-16 px-6 sm:px-8 md:px-10 text-base sm:text-lg md:text-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-xl hover:shadow-2xl transition-all duration-500"
+                whileHover={{ scale: 1.05, y: -4 }}
+                whileTap={{ scale: 0.95 }}
+              >
                 <Link href="/signup">
                   <span className="hidden sm:inline">Começar Gratuitamente</span>
                   <span className="sm:hidden">Começar Grátis</span>
-                  <ArrowRight className="ml-2 h-5 w-5 sm:h-6 sm:w-6 animate-pulse" />
+                  <motion.div variants={pulseVariants} animate="pulsing">
+                    <ArrowRight className="ml-2 h-5 w-5 sm:h-6 sm:w-6" />
+                  </motion.div>
                 </Link>
-              </Button>
-              <Button size="lg" variant="ghost" asChild className="h-12 sm:h-14 md:h-16 px-6 sm:px-8 md:px-10 text-base sm:text-lg md:text-xl text-primary hover:bg-primary/10 transition-all duration-300 transform hover:scale-105">
+              </MotionButton>
+              <MotionButton
+                size="lg"
+                variant="ghost"
+                asChild
+                className="h-12 sm:h-14 md:h-16 px-6 sm:px-8 md:px-10 text-base sm:text-lg md:text-xl text-primary hover:bg-primary/10 transition-all duration-300"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
                 <Link href="/login">Já tenho conta</Link>
-              </Button>
-            </div>
+              </MotionButton>
+            </motion.div>
             
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-4 sm:gap-6 md:gap-8 lg:gap-12 pt-8 sm:pt-12 md:pt-16 lg:pt-20 max-w-3xl mx-auto">
-              <div className="text-center group">
-                <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-primary group-hover:scale-110 transition-transform duration-300">IA</div>
+            <motion.div variants={itemVariants} className="grid grid-cols-3 gap-4 sm:gap-6 md:gap-8 lg:gap-12 pt-8 sm:pt-12 md:pt-16 lg:pt-20 max-w-3xl mx-auto">
+              <motion.div whileHover={{scale: 1.1}} className="text-center group">
+                <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-primary">IA</div>
                 <div className="text-xs sm:text-sm md:text-base text-muted-foreground font-medium">Gemini 2.0</div>
-              </div>
-              <div className="text-center group">
-                <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-primary group-hover:scale-110 transition-transform duration-300">TIMERS</div>
+              </motion.div>
+              <motion.div whileHover={{scale: 1.1}} className="text-center group">
+                <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-primary">TIMERS</div>
                 <div className="text-xs sm:text-sm md:text-base text-muted-foreground font-medium">Framework</div>
-              </div>
-              <div className="text-center group">
-                <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-primary group-hover:scale-110 transition-transform duration-300">PDF</div>
+              </motion.div>
+              <motion.div whileHover={{scale: 1.1}} className="text-center group">
+                <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-primary">PDF</div>
                 <div className="text-xs sm:text-sm md:text-base text-muted-foreground font-medium">Relatórios</div>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Video Section */}
@@ -185,14 +283,16 @@ export default function Home() {
         {/* Background decoration */}
         <div className="absolute inset-0 -z-10">
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/5 via-transparent to-primary/10"></div>
-          <div className="absolute top-1/3 right-1/4 w-64 sm:w-96 h-64 sm:h-96 bg-gradient-to-r from-primary/10 to-transparent rounded-full blur-3xl animate-pulse delay-700"></div>
-          <div className="absolute bottom-1/3 left-1/4 w-48 sm:w-72 h-48 sm:h-72 bg-gradient-to-r from-primary/5 to-primary/10 rounded-full blur-2xl animate-pulse delay-1200"></div>
+          <motion.div className="absolute top-1/3 right-1/4 w-64 sm:w-96 h-64 sm:h-96 bg-gradient-to-r from-primary/10 to-transparent rounded-full blur-3xl" variants={pulseVariants} animate="pulsing" transition={{...pulseVariants.pulsing.transition, delay: 0.7}}></motion.div>
+          <motion.div className="absolute bottom-1/3 left-1/4 w-48 sm:w-72 h-48 sm:h-72 bg-gradient-to-r from-primary/5 to-primary/10 rounded-full blur-2xl" variants={pulseVariants} animate="pulsing" transition={{...pulseVariants.pulsing.transition, delay: 1.2}}></motion.div>
         </div>
 
         <div className="container mx-auto">
            <div className="text-center mb-16 sm:mb-24">
             <div className="inline-flex items-center px-4 sm:px-6 py-3 rounded-full bg-gradient-to-r from-primary/10 to-primary/5 text-primary text-sm sm:text-base font-semibold border border-primary/20 shadow-lg backdrop-blur-sm mb-6 sm:mb-8">
-              <Award className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-pulse" />
+              <motion.div variants={pulseVariants} animate="pulsing">
+                <Award className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+              </motion.div>
               Recursos Avançados
             </div>
             <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 sm:mb-8">
@@ -262,8 +362,8 @@ export default function Home() {
         {/* Background decoration */}
         <div className="absolute inset-0 -z-10">
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/5 via-transparent to-primary/10"></div>
-          <div className="absolute top-1/4 right-1/3 w-80 sm:w-96 lg:w-[28rem] h-80 sm:h-96 lg:h-[28rem] bg-gradient-to-r from-primary/15 to-primary/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
-          <div className="absolute bottom-1/4 left-1/3 w-64 sm:w-80 lg:w-96 h-64 sm:h-80 lg:h-96 bg-gradient-to-r from-primary/10 to-transparent rounded-full blur-2xl animate-pulse delay-1500"></div>
+          <motion.div className="absolute top-1/4 right-1/3 w-80 sm:w-96 lg:w-[28rem] h-80 sm:h-96 lg:h-[28rem] bg-gradient-to-r from-primary/15 to-primary/5 rounded-full blur-3xl" variants={pulseVariants} animate="pulsing" transition={{...pulseVariants.pulsing.transition, delay: 1}}></motion.div>
+          <motion.div className="absolute bottom-1/4 left-1/3 w-64 sm:w-80 lg:w-96 h-64 sm:h-80 lg:h-96 bg-gradient-to-r from-primary/10 to-transparent rounded-full blur-2xl" variants={pulseVariants} animate="pulsing" transition={{...pulseVariants.pulsing.transition, delay: 1.5}}></motion.div>
         </div>
 
         <div className="container mx-auto">
@@ -271,7 +371,9 @@ export default function Home() {
             <div className="space-y-8 sm:space-y-12">
               <div>
                 <div className="inline-flex items-center px-4 sm:px-6 py-3 rounded-full bg-gradient-to-r from-primary/10 to-primary/5 text-primary text-sm sm:text-base font-semibold border border-primary/20 shadow-lg backdrop-blur-sm mb-6 sm:mb-8">
-                  <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-pulse" />
+                  <motion.div variants={pulseVariants} animate="pulsing">
+                    <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                  </motion.div>
                   Resultados Comprovados
                 </div>
                 <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 sm:mb-8">
@@ -286,85 +388,93 @@ export default function Home() {
               </div>
               
               <div className="space-y-6 sm:space-y-10">
-                <div className="flex items-start space-x-4 sm:space-x-6 p-4 sm:p-6 rounded-xl bg-gradient-to-r from-background/80 to-background/60 border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 group hover:scale-[1.02] backdrop-blur-sm">
-                  <div className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-r from-primary/20 to-primary/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                    <CheckCircle className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
-                  </div>
+                <motion.div whileHover={{scale: 1.02}} className="flex items-start space-x-4 sm:space-x-6 p-4 sm:p-6 rounded-xl bg-gradient-to-r from-background/80 to-background/60 border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 group backdrop-blur-sm">
+                  <motion.div whileHover={{scale: 1.1}} className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-r from-primary/20 to-primary/10 rounded-xl flex items-center justify-center">
+                    <CheckCircle className="h-6 w-6 sm:h-7 sm:h-7 text-primary" />
+                  </motion.div>
                   <div>
                     <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2 sm:mb-3 group-hover:text-primary transition-colors duration-300">Análise com Gemini</h3>
                     <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
                       Utiliza Gemini 2.0 Flash para análise multimodal de imagens e geração de relatórios comparativos
                     </p>
                   </div>
-                </div>
+                </motion.div>
                 
-                <div className="flex items-start space-x-4 sm:space-x-6 p-4 sm:p-6 rounded-xl bg-gradient-to-r from-background/80 to-background/60 border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 group hover:scale-[1.02] backdrop-blur-sm">
-                  <div className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-r from-primary/20 to-primary/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                    <Zap className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
-                  </div>
+                <motion.div whileHover={{scale: 1.02}} className="flex items-start space-x-4 sm:space-x-6 p-4 sm:p-6 rounded-xl bg-gradient-to-r from-background/80 to-background/60 border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 group backdrop-blur-sm">
+                  <motion.div whileHover={{scale: 1.1}} className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-r from-primary/20 to-primary/10 rounded-xl flex items-center justify-center">
+                    <Zap className="h-6 w-6 sm:h-7 sm:h-7 text-primary" />
+                  </motion.div>
                   <div>
                     <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2 sm:mb-3 group-hover:text-primary transition-colors duration-300">Automação Inteligente</h3>
                     <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
                       Geração automática de relatórios PDF com protocolo terapêutico e análise comparativa de imagens
                     </p>
                   </div>
-                </div>
+                </motion.div>
                 
-                <div className="flex items-start space-x-4 sm:space-x-6 p-4 sm:p-6 rounded-xl bg-gradient-to-r from-background/80 to-background/60 border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 group hover:scale-[1.02] backdrop-blur-sm">
-                  <div className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-r from-primary/20 to-primary/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                    <Shield className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
-                  </div>
+                <motion.div whileHover={{scale: 1.02}} className="flex items-start space-x-4 sm:space-x-6 p-4 sm:p-6 rounded-xl bg-gradient-to-r from-background/80 to-background/60 border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 group backdrop-blur-sm">
+                  <motion.div whileHover={{scale: 1.1}} className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-r from-primary/20 to-primary/10 rounded-xl flex items-center justify-center">
+                    <Shield className="h-6 w-6 sm:h-7 sm:h-7 text-primary" />
+                  </motion.div>
                   <div>
                     <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2 sm:mb-3 group-hover:text-primary transition-colors duration-300">Interface Responsiva</h3>
                     <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
                       Design moderno e responsivo com sidebar animada, funcionando em desktop e mobile
                     </p>
                   </div>
-                </div>
+                </motion.div>
               </div>
             </div>
             
             <div className="relative">
               <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
-                <Card className="p-6 sm:p-8 text-center hover:shadow-2xl transition-all duration-500 transform hover:scale-105 bg-gradient-to-br from-background/90 to-background/70 border border-border/50 backdrop-blur-sm group">
+                <motion.div whileHover={{ scale: 1.05, y: -5 }} className="w-full">
+                <Card className="p-6 sm:p-8 text-center hover:shadow-2xl transition-all duration-500 bg-gradient-to-br from-background/90 to-background/70 border border-border/50 backdrop-blur-sm group">
                   <CardContent className="space-y-4 sm:space-y-6">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-primary/20 to-primary/10 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300">
+                    <motion.div whileHover={{scale: 1.1}} className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-primary/20 to-primary/10 rounded-full flex items-center justify-center mx-auto">
                       <Brain className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
-                    </div>
-                    <div className="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary group-hover:scale-110 transition-transform duration-300">Gemini</div>
+                    </motion.div>
+                    <motion.div whileHover={{scale: 1.1}} className="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary">Gemini</motion.div>
                     <p className="text-sm sm:text-base text-muted-foreground font-medium">2.0 Flash</p>
                   </CardContent>
                 </Card>
+                </motion.div>
                 
-                <Card className="p-6 sm:p-8 text-center hover:shadow-2xl transition-all duration-500 transform hover:scale-105 bg-gradient-to-br from-background/90 to-background/70 border border-border/50 backdrop-blur-sm group">
+                <motion.div whileHover={{ scale: 1.05, y: -5 }} className="w-full">
+                <Card className="p-6 sm:p-8 text-center hover:shadow-2xl transition-all duration-500 bg-gradient-to-br from-background/90 to-background/70 border border-border/50 backdrop-blur-sm group">
                   <CardContent className="space-y-4 sm:space-y-6">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-primary/20 to-primary/10 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300">
+                    <motion.div whileHover={{scale: 1.1}} className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-primary/20 to-primary/10 rounded-full flex items-center justify-center mx-auto">
                       <TrendingUp className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
-                    </div>
-                    <div className="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary group-hover:scale-110 transition-transform duration-300">TIMERS</div>
+                    </motion.div>
+                    <motion.div whileHover={{scale: 1.1}} className="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary">TIMERS</motion.div>
                     <p className="text-sm sm:text-base text-muted-foreground font-medium">Framework</p>
                   </CardContent>
                 </Card>
+                </motion.div>
                 
-                <Card className="p-6 sm:p-8 text-center hover:shadow-2xl transition-all duration-500 transform hover:scale-105 bg-gradient-to-br from-background/90 to-background/70 border border-border/50 backdrop-blur-sm group">
+                <motion.div whileHover={{ scale: 1.05, y: -5 }} className="w-full">
+                <Card className="p-6 sm:p-8 text-center hover:shadow-2xl transition-all duration-500 bg-gradient-to-br from-background/90 to-background/70 border border-border/50 backdrop-blur-sm group">
                   <CardContent className="space-y-4 sm:space-y-6">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-primary/20 to-primary/10 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300">
+                    <motion.div whileHover={{scale: 1.1}} className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-primary/20 to-primary/10 rounded-full flex items-center justify-center mx-auto">
                       <Activity className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
-                    </div>
-                    <div className="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary group-hover:scale-110 transition-transform duration-300">PDF</div>
+                    </motion.div>
+                    <motion.div whileHover={{scale: 1.1}} className="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary">PDF</motion.div>
                     <p className="text-sm sm:text-base text-muted-foreground font-medium">Relatórios</p>
                   </CardContent>
                 </Card>
+                </motion.div>
                 
-                <Card className="p-6 sm:p-8 text-center hover:shadow-2xl transition-all duration-500 transform hover:scale-105 bg-gradient-to-br from-background/90 to-background/70 border border-border/50 backdrop-blur-sm group">
+                <motion.div whileHover={{ scale: 1.05, y: -5 }} className="w-full">
+                <Card className="p-6 sm:p-8 text-center hover:shadow-2xl transition-all duration-500 bg-gradient-to-br from-background/90 to-background/70 border border-border/50 backdrop-blur-sm group">
                   <CardContent className="space-y-4 sm:space-y-6">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-primary/20 to-primary/10 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300">
+                    <motion.div whileHover={{scale: 1.1}} className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-primary/20 to-primary/10 rounded-full flex items-center justify-center mx-auto">
                       <Users className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
-                    </div>
-                    <div className="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary group-hover:scale-110 transition-transform duration-300">Firebase</div>
+                    </motion.div>
+                    <motion.div whileHover={{scale: 1.1}} className="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary">Firebase</motion.div>
                     <p className="text-sm sm:text-base text-muted-foreground font-medium">Backend</p>
                   </CardContent>
                 </Card>
+                </motion.div>
               </div>
             </div>
           </div>
@@ -374,15 +484,17 @@ export default function Home() {
       {/* CTA Section */}
       <section className="py-20 sm:py-32 px-4 sm:px-6 lg:px-8 relative overflow-hidden bg-gradient-to-br from-primary/90 via-primary to-primary/90">
           <div className="absolute inset-0 -z-10">
-              <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/95 via-primary/90 to-primary/95"></div>
-              <div className="absolute top-1/4 right-1/4 w-64 sm:w-80 lg:w-96 h-64 sm:h-80 lg:h-96 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
-              <div className="absolute bottom-1/4 left-1/4 w-48 sm:w-64 lg:w-80 h-48 sm:h-64 lg:h-80 bg-white/5 rounded-full blur-2xl animate-pulse delay-500"></div>
+              <motion.div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/95 via-primary/90 to-primary/95" variants={backgroundCircleVariants} animate="animate"></motion.div>
+              <motion.div className="absolute top-1/4 right-1/4 w-64 sm:w-80 lg:w-96 h-64 sm:h-80 lg:h-96 bg-white/10 rounded-full blur-3xl" variants={pulseVariants} animate="pulsing"></motion.div>
+              <motion.div className="absolute bottom-1/4 left-1/4 w-48 sm:w-64 lg:w-80 h-48 sm:h-64 lg:h-80 bg-white/5 rounded-full blur-2xl" variants={pulseVariants} animate="pulsing" transition={{...pulseVariants.pulsing.transition, delay: 0.5}}></motion.div>
           </div>
           <div className="container mx-auto text-center relative z-10">
               <div className="max-w-4xl mx-auto p-8 sm:p-12 lg:p-16 rounded-2xl bg-black/5 border border-white/10 backdrop-blur-xl shadow-2xl shadow-primary/10">
                   <div className="space-y-8 sm:space-y-10">
                       <div className="inline-flex items-center px-4 sm:px-6 py-3 rounded-full bg-white/10 text-white text-sm sm:text-base font-semibold border border-white/20 shadow-lg">
-                          <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-blue-300 animate-pulse" />
+                          <motion.div variants={pulseVariants} animate="pulsing">
+                            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-blue-300" />
+                          </motion.div>
                           Junte-se à revolução da saúde
                       </div>
                       <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight">
@@ -392,15 +504,15 @@ export default function Home() {
                           Sistema desenvolvido para auxiliar profissionais de saúde na avaliação e documentação de feridas com IA.
                       </p>
                       <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center pt-4 sm:pt-6">
-                          <Button size="lg" asChild className="h-12 sm:h-14 md:h-16 px-6 sm:px-8 md:px-10 text-base sm:text-lg md:text-xl bg-white text-primary hover:bg-blue-100 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-1">
+                          <MotionButton size="lg" asChild className="h-12 sm:h-14 md:h-16 px-6 sm:px-8 md:px-10 text-base sm:text-lg md:text-xl bg-white text-primary hover:bg-blue-100 shadow-xl hover:shadow-2xl" whileHover={{ scale: 1.05, y: -4 }} whileTap={{ scale: 0.95 }}>
                               <Link href="/signup">
                                   Começar Agora - É Grátis
                                   <ArrowRight className="ml-2 h-5 w-5 sm:h-6 sm:w-6" />
                               </Link>
-                          </Button>
-                          <Button size="lg" variant="ghost" asChild className="h-12 sm:h-14 md:h-16 px-6 sm:px-8 md:px-10 text-base sm:text-lg md:text-xl text-white hover:bg-white/10 hover:text-white transition-all duration-300 transform hover:scale-105">
+                          </MotionButton>
+                          <MotionButton size="lg" variant="ghost" asChild className="h-12 sm:h-14 md:h-16 px-6 sm:px-8 md:px-10 text-base sm:text-lg md:text-xl text-white hover:bg-white/10 hover:text-white" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                               <Link href="/login">Já tenho conta</Link>
-                          </Button>
+                          </MotionButton>
                       </div>
                       <div className="flex flex-wrap items-center justify-center gap-x-6 sm:gap-x-8 gap-y-3 pt-6 sm:pt-8 text-sm text-blue-100">
                           <div className="flex items-center gap-2 cta-feature-badge px-3 py-1 rounded-full border-blue-300/30 bg-blue-400/10">
@@ -426,8 +538,8 @@ export default function Home() {
         {/* Background decoration */}
         <div className="absolute inset-0 -z-10">
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/5 via-transparent to-primary/10"></div>
-          <div className="absolute top-1/3 right-1/4 w-64 sm:w-80 lg:w-96 h-64 sm:h-80 lg:h-96 bg-gradient-to-r from-primary/10 to-transparent rounded-full blur-3xl animate-pulse delay-2000"></div>
-          <div className="absolute bottom-1/3 left-1/4 w-48 sm:w-64 lg:w-80 h-48 sm:h-64 lg:h-80 bg-gradient-to-r from-primary/5 to-primary/10 rounded-full blur-2xl animate-pulse delay-2500"></div>
+          <motion.div className="absolute top-1/3 right-1/4 w-64 sm:w-80 lg:w-96 h-64 sm:h-80 lg:h-96 bg-gradient-to-r from-primary/10 to-transparent rounded-full blur-3xl" variants={pulseVariants} animate="pulsing" transition={{...pulseVariants.pulsing.transition, delay: 2}}></motion.div>
+          <motion.div className="absolute bottom-1/3 left-1/4 w-48 sm:w-64 lg:w-80 h-48 sm:h-64 lg:h-80 bg-gradient-to-r from-primary/5 to-primary/10 rounded-full blur-2xl" variants={pulseVariants} animate="pulsing" transition={{...pulseVariants.pulsing.transition, delay: 2.5}}></motion.div>
         </div>
 
         <div className="container mx-auto">
@@ -475,8 +587,8 @@ export default function Home() {
         {/* Background decoration */}
         <div className="absolute inset-0 -z-10">
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-slate-900/95 via-slate-800/90 to-slate-900/95"></div>
-          <div className="absolute top-1/4 right-1/4 w-64 sm:w-80 lg:w-96 h-64 sm:h-80 lg:h-96 bg-primary/10 rounded-full blur-3xl animate-pulse delay-3000"></div>
-          <div className="absolute bottom-1/4 left-1/4 w-48 sm:w-64 lg:w-80 h-48 sm:h-64 lg:h-80 bg-primary/5 rounded-full blur-2xl animate-pulse delay-3500"></div>
+          <motion.div className="absolute top-1/4 right-1/4 w-64 sm:w-80 lg:w-96 h-64 sm:h-80 lg:h-96 bg-primary/10 rounded-full blur-3xl" variants={pulseVariants} animate="pulsing" transition={{...pulseVariants.pulsing.transition, delay: 3}}></motion.div>
+          <motion.div className="absolute bottom-1/4 left-1/4 w-48 sm:w-64 lg:w-80 h-48 sm:h-64 lg:h-80 bg-primary/5 rounded-full blur-2xl" variants={pulseVariants} animate="pulsing" transition={{...pulseVariants.pulsing.transition, delay: 3.5}}></motion.div>
         </div>
 
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 relative z-10">
@@ -499,8 +611,8 @@ export default function Home() {
             <div className="space-y-4 sm:space-y-6">
               <h3 className="text-lg sm:text-xl font-bold text-primary">Navegação</h3>
               <ul className="space-y-3">
-                <li><Link href="/" className="text-white hover:text-primary transition-colors text-sm sm:text-base flex items-center gap-2 hover:translate-x-1 transition-transform duration-300">Home</Link></li>
-                <li><Link href="#faq" className="text-white hover:text-primary transition-colors text-sm sm:text-base flex items-center gap-2 hover:translate-x-1 transition-transform duration-300">Perguntas Frequentes</Link></li>
+                <li><MotionLink href="/" className="text-white hover:text-primary transition-colors text-sm sm:text-base flex items-center gap-2" whileHover={{ x: 4 }}>Home</MotionLink></li>
+                <li><MotionLink href="#faq" className="text-white hover:text-primary transition-colors text-sm sm:text-base flex items-center gap-2" whileHover={{ x: 4 }}>Perguntas Frequentes</MotionLink></li>
               </ul>
             </div>
             
@@ -508,18 +620,18 @@ export default function Home() {
             <div className="space-y-4 sm:space-y-6">
               <h3 className="text-lg sm:text-xl font-bold text-primary">Conecte-se</h3>
               <div className="flex items-center space-x-4 sm:space-x-6">
-                <a href="#" className="text-white hover:text-primary transition-all duration-300 transform hover:scale-110" aria-label="WhatsApp">
+                <MotionLink href="#" className="text-white hover:text-primary" aria-label="WhatsApp" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                   <MessageCircle className="w-6 h-6 sm:w-7 sm:h-7" />
-                </a>
-                <a href="#" className="text-white hover:text-primary transition-all duration-300 transform hover:scale-110" aria-label="LinkedIn">
+                </MotionLink>
+                <MotionLink href="#" className="text-white hover:text-primary" aria-label="LinkedIn" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                   <Linkedin className="w-6 h-6 sm:w-7 sm:h-7" />
-                </a>
-                <a href="https://www.youtube.com/@GrupoHealplus" target="_blank" rel="noopener noreferrer" className="text-white hover:text-primary transition-all duration-300 transform hover:scale-110" aria-label="YouTube">
+                </MotionLink>
+                <MotionLink href="https://www.youtube.com/@GrupoHealplus" target="_blank" rel="noopener noreferrer" className="text-white hover:text-primary" aria-label="YouTube" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                   <Youtube className="w-6 h-6 sm:w-7 sm:h-7" />
-                </a>
-                <a href="#" className="text-white hover:text-primary transition-all duration-300 transform hover:scale-110" aria-label="Instagram">
+                </MotionLink>
+                <MotionLink href="#" className="text-white hover:text-primary" aria-label="Instagram" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                   <Instagram className="w-6 h-6 sm:w-7 sm:h-7" />
-                </a>
+                </MotionLink>
               </div>
               <p className="text-sm text-gray-300">Siga-nos para atualizações</p>
             </div>
