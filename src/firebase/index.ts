@@ -3,8 +3,9 @@
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore'
+import { getFirestore } from 'firebase/firestore';
 import { getDatabase } from 'firebase/database';
+import { getAnalytics, isSupported } from "firebase/analytics";
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
@@ -47,17 +48,28 @@ export function initializeFirebase() {
 
 export function getSdks(firebaseApp: FirebaseApp) {
   let database = null;
-  
+  let analytics = null;
+
   // Skip Realtime Database initialization for now to avoid errors
   console.log('Skipping Realtime Database initialization to avoid URL parsing errors');
   
   const auth = getAuth(firebaseApp);
   const firestore = getFirestore(firebaseApp);
+
+  isSupported().then((isSupported) => {
+    if (isSupported) {
+      analytics = getAnalytics(firebaseApp);
+      console.log('Firebase Analytics initialized.');
+    } else {
+      console.log('Firebase Analytics is not supported in this environment.');
+    }
+  });
   
   console.log('Firebase SDKs initialized:', {
     auth: !!auth,
     firestore: !!firestore,
     database: false, // Disabled temporarily
+    analytics: !!analytics,
     appOptions: {
       projectId: firebaseApp.options.projectId,
       databaseURL: firebaseApp.options.databaseURL,
@@ -70,6 +82,7 @@ export function getSdks(firebaseApp: FirebaseApp) {
     auth,
     firestore,
     database, // Realtime Database SDK (disabled temporarily)
+    analytics,
   };
 }
 
