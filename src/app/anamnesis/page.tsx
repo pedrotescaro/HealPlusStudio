@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { Card, CardContent } from "@/components/ui/card";
 import { useTranslation } from "@/contexts/app-provider";
 import { Skeleton } from '@/components/ui/skeleton';
+import { useSearchParams } from 'next/navigation';
 
 const AnamnesisForm = dynamic(() => import('@/components/dashboard/anamnesis-form').then(mod => mod.AnamnesisForm), {
   ssr: false,
@@ -19,11 +20,18 @@ const AnamnesisForm = dynamic(() => import('@/components/dashboard/anamnesis-for
 
 export default function AnamnesisPage() {
   const { t } = useTranslation();
+  const searchParams = useSearchParams();
+  const isEditMode = !!searchParams.get('edit');
+
   return (
     <div className="space-y-6 max-w-full page-responsive">
       <div>
-        <h1 className="text-responsive-3xl font-bold tracking-tight">{t.anamnesisTitle}</h1>
-        <p className="text-muted-foreground text-responsive-base">{t.anamnesisDescription}</p>
+        <h1 className="text-responsive-3xl font-bold tracking-tight">
+          {isEditMode ? "Editar Avaliação" : t.anamnesisTitle}
+        </h1>
+        <p className="text-muted-foreground text-responsive-base">
+          {isEditMode ? "Modifique os dados da ficha de avaliação abaixo." : t.anamnesisDescription}
+        </p>
       </div>
       <Card className="w-full">
         <CardContent className="card-responsive w-full">

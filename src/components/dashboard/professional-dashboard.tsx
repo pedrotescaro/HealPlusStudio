@@ -45,6 +45,7 @@ import { useTranslation } from "@/contexts/app-provider";
 import { AnamnesisDetailsView } from "@/components/dashboard/anamnesis-details-view";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
+import type { Query } from "firebase/firestore";
 
 type StoredAnamnesis = AnamnesisFormValues & { id: string };
 
@@ -67,20 +68,25 @@ export function ProfessionalDashboard() {
     thisMonthEvaluations: 0
   });
 
-  const anamnesisCollectionQuery = useMemoFirebase(() => {
+  const baseQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
-    return query(collection(firestore, "users", user.uid, "anamnesis"), orderBy("data_consulta", "desc"));
+    return collection(firestore, "users", user.uid);
   }, [user, firestore]);
+
+  const anamnesisCollectionQuery = useMemoFirebase(() => {
+    if (!baseQuery) return null;
+    return query(collection(baseQuery, "anamnesis"), orderBy("data_consulta", "desc"));
+  }, [baseQuery]);
 
   const reportsCollectionQuery = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return collection(firestore, "users", user.uid, "reports");
-  }, [user, firestore]);
+    if (!baseQuery) return null;
+    return collection(baseQuery, "reports");
+  }, [baseQuery]);
 
   const comparisonsCollectionQuery = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return collection(firestore, "users", user.uid, "comparisons");
-  }, [user, firestore]);
+    if (!baseQuery) return null;
+    return collection(baseQuery, "comparisons");
+  }, [baseQuery]);
 
   const { data: allAnamneses, isLoading: anamnesisLoading } = useCollection<StoredAnamnesis>(anamnesisCollectionQuery);
   const { data: allReports, isLoading: reportsLoading } = useCollection(reportsCollectionQuery);
@@ -148,7 +154,7 @@ export function ProfessionalDashboard() {
   };
   
   const handleEdit = (id: string) => {
-    router.push(`/dashboard/anamnesis?edit=${id}`);
+    router.push(`/anamnesis?edit=${id}`);
   };
 
   return (
@@ -234,7 +240,7 @@ export function ProfessionalDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent className="mt-auto">
-            <Link href="/dashboard/anamnesis" passHref>
+            <Link href="/anamnesis" passHref>
               <Button className="w-full">{t.createForm}</Button>
             </Link>
           </CardContent>
@@ -343,7 +349,7 @@ export function ProfessionalDashboard() {
             ) : (
               <div className="text-center py-8">
                 <p className="text-muted-foreground mb-4">{t.noRecordsFound}</p>
-                <Link href="/dashboard/anamnesis" passHref>
+                <Link href="/anamnesis" passHref>
                   <Button variant="outline">
                     <PlusCircle className="mr-2" />
                     {t.createFirstRecord}
