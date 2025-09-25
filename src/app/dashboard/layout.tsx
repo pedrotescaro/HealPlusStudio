@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import AppSidebar from '@/components/dashboard/app-sidebar';
 import MobileNav from '@/components/dashboard/mobile-nav';
 import { useAuth } from '@/hooks/use-auth';
@@ -16,15 +16,20 @@ export default function DashboardLayout({
   const { user, loading } = useAuth();
   const router = useRouter();
 
+  useEffect(() => {
+    // Redireciona apenas após a verificação de autenticação e se não houver usuário.
+    // Isso evita o erro "Cannot update a component while rendering a different component".
+    if (!loading && !user) {
+      router.replace('/login');
+    }
+  }, [user, loading, router]);
+
   if (loading) {
     return <LoadingPage message="Autenticando..." />;
   }
 
+  // Se não há usuário e ainda não redirecionou, exibe o carregamento para evitar piscar a tela.
   if (!user) {
-    // A verificação de autenticação concluiu e não há usuário.
-    // O ideal é que o hook `useAuth` ou um middleware já tivesse redirecionado,
-    // mas fazemos um último redirecionamento aqui para garantir.
-    router.replace('/login');
     return <LoadingPage message="Redirecionando para login..." />;
   }
 
