@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useAuth } from "@/hooks/use-auth";
 import Link from "next/link";
@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirebase, useCollection } from "@/firebase";
 import { collection, query, orderBy, limit, doc, deleteDoc } from "firebase/firestore";
 import { ActivitySummaryChart } from "@/components/dashboard/activity-summary-chart";
 import { useTranslation } from "@/contexts/app-provider";
@@ -68,24 +68,18 @@ export function ProfessionalDashboard() {
     thisMonthEvaluations: 0
   });
 
-  const anamnesisCollectionQuery = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return query(collection(firestore, "users", user.uid, "anamnesis"), orderBy("data_consulta", "desc"));
-  }, [user, firestore]);
+  const { data: allAnamneses, isLoading: anamnesisLoading } = useCollection<StoredAnamnesis>(
+    user ? `users/${user.uid}/anamnesis` : null,
+    orderBy("data_consulta", "desc")
+  );
 
-  const reportsCollectionQuery = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return collection(firestore, "users", user.uid, "reports");
-  }, [user, firestore]);
+  const { data: allReports, isLoading: reportsLoading } = useCollection(
+    user ? `users/${user.uid}/reports` : null
+  );
 
-  const comparisonsCollectionQuery = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return collection(firestore, "users", user.uid, "comparisons");
-  }, [user, firestore]);
-
-  const { data: allAnamneses, isLoading: anamnesisLoading } = useCollection<StoredAnamnesis>(anamnesisCollectionQuery);
-  const { data: allReports, isLoading: reportsLoading } = useCollection(reportsCollectionQuery);
-  const { data: allComparisons, isLoading: comparisonsLoading } = useCollection(comparisonsCollectionQuery);
+  const { data: allComparisons, isLoading: comparisonsLoading } = useCollection(
+    user ? `users/${user.uid}/comparisons` : null
+  );
 
   const loading = anamnesisLoading || reportsLoading || comparisonsLoading;
 
