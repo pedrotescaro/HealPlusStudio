@@ -17,8 +17,6 @@ export default function DashboardLayout({
   const router = useRouter();
 
   useEffect(() => {
-    // Redireciona apenas após a verificação de autenticação e se não houver usuário.
-    // Isso evita o erro "Cannot update a component while rendering a different component".
     if (!loading && !user) {
       router.replace('/login');
     }
@@ -28,12 +26,12 @@ export default function DashboardLayout({
     return <LoadingPage message="Autenticando..." />;
   }
 
-  // Se não há usuário e ainda não redirecionou, exibe o carregamento para evitar piscar a tela.
   if (!user) {
+    // This state is temporary while the redirect is in flight
     return <LoadingPage message="Redirecionando para login..." />;
   }
 
-  // Se chegou até aqui, o usuário está carregado e autenticado.
+  // User is authenticated, render the dashboard
   return (
     <div className="flex min-h-screen w-full bg-muted/40">
       <div className="hidden md:flex">

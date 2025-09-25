@@ -45,12 +45,8 @@ export default function Home() {
     }
   }, [user, loading, router]);
 
-  if (loading) {
+  if (loading || user) {
     return <LoadingPage message="Carregando Heal+..." />;
-  }
-
-  if (user) {
-     return <LoadingPage message="Redirecionando para o dashboard..." />;
   }
 
   const containerVariants = {
