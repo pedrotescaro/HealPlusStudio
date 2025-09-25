@@ -37,12 +37,15 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { db } from "@/firebase/client-app";
+import { useFirebase } from "@/firebase";
 import { collection, query, getDocs, orderBy, doc, deleteDoc, Timestamp, getDoc, where, collectionGroup } from "firebase/firestore";
 import { useTranslation } from "@/contexts/app-provider";
 import jsPDF from "jspdf";
 import autoTable from 'jspdf-autotable';
 import type { AnamnesisFormValues } from "@/lib/anamnesis-schema";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
+import type { Query } from "firebase/firestore";
 
 interface StoredReport {
   id: string;
@@ -59,6 +62,7 @@ export default function ReportsPage() {
   const { toast } = useToast();
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { firestore } = useFirebase();
   const [reports, setReports] = useState<StoredReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -68,66 +72,72 @@ export default function ReportsPage() {
 
   useEffect(() => {
     const fetchReports = async () => {
-      if (!user) {
+      if (!user || !firestore) {
         setLoading(false);
         return;
       }
-      try {
-        let reportsQuery;
-        if (user.role === 'professional') {
-          // Professional: Fetch reports they created from their own subcollection
-          reportsQuery = query(collection(db, "users", user.uid, "reports"), orderBy("createdAt", "desc"));
-        } else {
-          // Patient: Fetch all reports where they are the patient across all professionals using a collectionGroup query
-          reportsQuery = query(collectionGroup(db, "reports"), where("patientId", "==", user.uid), orderBy("createdAt", "desc"));
-        }
-        
-        const querySnapshot = await getDocs(reportsQuery);
-        const fetchedReports = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredReport));
-        setReports(fetchedReports);
-      } catch (error) {
-        console.error("Error fetching reports from Firestore: ", error);
-        toast({ title: t.errorTitle, description: t.myReportsErrorLoading, variant: "destructive" });
-      } finally {
-        setLoading(false);
+      
+      let reportsQuery;
+      if (user.role === 'professional') {
+        reportsQuery = query(collection(firestore, "users", user.uid, "reports"), orderBy("createdAt", "desc"));
+      } else {
+        reportsQuery = query(collectionGroup(firestore, "reports"), where("patientId", "==", user.uid), orderBy("createdAt", "desc"));
       }
+      
+      getDocs(reportsQuery)
+        .then(querySnapshot => {
+          const fetchedReports = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredReport));
+          setReports(fetchedReports);
+        })
+        .catch(serverError => {
+            const permissionError = new FirestorePermissionError({
+              path: (reportsQuery as any).path,
+              operation: 'list'
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        })
+        .finally(() => {
+            setLoading(false);
+        });
     };
 
-    if (user) {
+    if (user && firestore) {
       fetchReports();
     }
-  }, [user, toast, t]);
+  }, [user, firestore, t, toast]);
 
   const handleDelete = async () => {
-    if (!reportToDelete || !user || user.role !== 'professional') return;
-    try {
-      // Professionals delete from their own subcollection
-      await deleteDoc(doc(db, "users", user.uid, "reports", reportToDelete));
-      setReports(reports.filter(report => report.id !== reportToDelete));
-      toast({
-        title: t.deleteReportTitle,
-        description: t.deleteReportDescription,
+    if (!reportToDelete || !user || user.role !== 'professional' || !firestore) return;
+    
+    const docRef = doc(firestore, "users", user.uid, "reports", reportToDelete);
+    
+    deleteDoc(docRef)
+      .then(() => {
+        setReports(reports.filter(report => report.id !== reportToDelete));
+        toast({
+          title: t.deleteReportTitle,
+          description: t.deleteReportDescription,
+        });
+      })
+      .catch((serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'delete'
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => {
+        setReportToDelete(null);
       });
-    } catch (error) {
-      toast({
-        title: t.errorTitle,
-        description: t.deleteReportError,
-        variant: "destructive",
-      });
-      console.error("Failed to delete report from Firestore", error);
-    } finally {
-      setReportToDelete(null);
-    }
   };
 
   const handleSavePdf = async (report: StoredReport | null) => {
-    if (!report || !user) return;
-    setCurrentReportForPdf(report); // Track which report is generating PDF
+    if (!report || !user || !firestore) return;
+    setCurrentReportForPdf(report);
     setPdfLoading(true);
 
     try {
-        // The anamnesis record is stored by the professional who created it
-        const anamnesisDocRef = doc(db, "users", report.professionalId, "anamnesis", report.anamnesisId);
+        const anamnesisDocRef = doc(firestore, "users", report.professionalId, "anamnesis", report.anamnesisId);
         const anamnesisSnap = await getDoc(anamnesisDocRef);
         if (!anamnesisSnap.exists()) {
           toast({ title: "Erro", description: "Ficha de anamnese associada não encontrada.", variant: "destructive" });

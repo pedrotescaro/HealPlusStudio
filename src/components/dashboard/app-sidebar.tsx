@@ -65,6 +65,8 @@ export default function AppSidebar({ className, onLinkClick }: AppSidebarProps) 
     { href: "/dashboard/agenda", icon: Calendar, label: t.agenda },
     { href: "/dashboard/reports", icon: Archive, label: t.myReports },
     { href: "/dashboard/compare-reports", icon: CopyCheck, label: t.compareReports, badge: "Pro" },
+    { href: "/dashboard/analytics", icon: BarChart3, label: "Analytics", badge: "Pro" },
+    { href: "/dashboard/chat", icon: MessageSquare, label: "Chat", badge: "AI" },
     { href: "/dashboard/profile", icon: User, label: t.profile },
   ];
 
