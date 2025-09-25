@@ -323,7 +323,6 @@ export function ProfileForm() {
 
       <Dialog open={isCropModalOpen} onOpenChange={setIsCropModalOpen}>
         <DialogContent>
-          {/* @ts-ignore */}
           <DialogHeader>
             <DialogTitle>Ajuste sua Foto de Perfil</DialogTitle>
           </DialogHeader>
@@ -348,7 +347,6 @@ export function ProfileForm() {
               </div>
             )}
           </div>
-          {/* @ts-ignore */}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCropModalOpen(false)}>Cancelar</Button>
             <Button onClick={handleCropAndUpload} disabled={!completedCrop}>Salvar Foto</Button>

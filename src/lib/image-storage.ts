@@ -1,12 +1,18 @@
 "use client";
 
 import { getDatabase, ref, set, get, child } from 'firebase/database';
-import { initializeFirebase } from '@/firebase'; // Use the central initializer
+import { initializeFirebase } from '@/firebase';
 import { v4 as uuidv4 } from 'uuid';
 
-// Initialize Firebase and get the database instance
-const { firebaseApp } = initializeFirebase();
-const realtimeDb = getDatabase(firebaseApp);
+// This might be null if Firebase is not initialized yet.
+let realtimeDb: ReturnType<typeof getDatabase> | null = null;
+
+try {
+  const { database } = initializeFirebase();
+  realtimeDb = database;
+} catch (e) {
+  console.error("Failed to initialize Firebase Realtime Database in ImageStorageService:", e);
+}
 
 
 type ImageMetadata = {
@@ -35,6 +41,9 @@ export class ImageStorageService {
     path: string,
     metadata: { fileName: string; mimeType: string }
   ): Promise<string> {
+    if (!realtimeDb) {
+      throw new Error("Realtime Database is not initialized.");
+    }
     const imageId = uuidv4();
     const imageRef = ref(realtimeDb, `images/${userId}/${path}/${imageId}`);
     const storedImage: StoredImage = {
@@ -55,8 +64,11 @@ export class ImageStorageService {
    * @returns The stored image object or null if not found.
    */
   static async getImage(userId: string, imageId: string): Promise<StoredImage | null> {
+    if (!realtimeDb) {
+      throw new Error("Realtime Database is not initialized.");
+    }
     try {
-      const snapshot = await get(child(ref(realtimeDb), `images/${userId}/${imageId}`));
+      const snapshot = await get(child(ref(realtimeDb), `images/${userId}/profile-pictures/${imageId}`));
       if (snapshot.exists()) {
         return snapshot.val() as StoredImage;
       }
