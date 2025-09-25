@@ -13,7 +13,8 @@ import {
   signInWithPopup,
   updateProfile,
   sendEmailVerification,
-  UserCredential
+  UserCredential,
+  signInAnonymously
 } from 'firebase/auth';
 import { useFirebase } from '@/firebase'; // Using the main hook to get auth instance
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
@@ -25,7 +26,9 @@ interface AuthContextType {
   signup: (name:string, email: string, pass: string) => Promise<UserCredential>;
   logout: () => Promise<void>;
   loginWithGoogle: () => Promise<UserCredential>;
+  loginWithMicrosoft: () => Promise<UserCredential>;
   loginWithApple: () => Promise<UserCredential>;
+  loginAnonymously: () => Promise<UserCredential>;
   setUserRoleAndRefresh: (user: User, role: 'professional' | 'patient') => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -96,7 +99,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const loginWithGoogle = () => socialLogin(new GoogleAuthProvider());
+  const loginWithMicrosoft = () => socialLogin(new OAuthProvider('microsoft.com'));
   const loginWithApple = () => socialLogin(new OAuthProvider('apple.com'));
+  const loginAnonymously = () => {
+    if (!auth) throw new Error("Auth service not available");
+    return signInAnonymously(auth);
+  }
+
 
   const setUserRoleAndRefresh = async (userToUpdate: User, role: 'professional' | 'patient') => {
     if (!firestore) throw new Error("Firestore not available");
@@ -113,7 +122,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout, loginWithGoogle, loginWithApple, setUserRoleAndRefresh, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout, loginWithGoogle, loginWithMicrosoft, loginWithApple, loginAnonymously, setUserRoleAndRefresh, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

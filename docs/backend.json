@@ -179,7 +179,8 @@
       "password",
       "anonymous",
       "google.com",
-      "apple.com"
+      "apple.com",
+      "microsoft.com"
     ]
   },
   "firestore": {
