@@ -1,22 +1,18 @@
 'use server';
 
 /**
- * @fileOverview An AI agent to compare two wound reports (text and images) and assess healing progress.
+ * @fileOverview An AI agent to compare wound images and assess healing progress based on a professional tissue analysis protocol.
  *
- * - compareWoundReports - A function that handles the comparison of two reports.
- * - CompareWoundReportsInput - The input type for the compareWoundReports function.
- * - CompareWoundReportsOutput - The return type for the compareWoundReports function.
+ * - compareWoundImages - A function that handles the comparison of multiple wound images.
+ * - CompareWoundImagesInput - The input type for the compareWoundImages function.
+ * - CompareWoundImagesOutput - The return type for the compareWoundImages function.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 import { CompareWoundImagesOutputSchema } from '../schemas';
-import type { CompareWoundImagesOutput } from './compare-wound-images';
 
-
-const CompareWoundReportsInputSchema = z.object({
-  report1Content: z.string().describe("The content of the first (older) wound report in Markdown format."),
-  report2Content: z.string().describe("The content of the second (newer) wound report in Markdown format."),
+const CompareWoundImagesInputSchema = z.object({
   image1DataUri: z
     .string()
     .describe(
@@ -27,26 +23,29 @@ const CompareWoundReportsInputSchema = z.object({
     .describe(
       "The second wound image as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
-  report1Date: z.string().describe("The creation date of the first report."),
-  report2Date: z.string().describe("The creation date of the second report."),
+  image1Metadata: z.object({
+      id: z.string().describe("File name or ID for Image 1"),
+      datetime: z.string().describe("Capture date and time for Image 1 in ISO format (AAAA-MM-DDTHH:MM:SS)"),
+  }),
+  image2Metadata: z.object({
+      id: z.string().describe("File name or ID for Image 2"),
+      datetime: z.string().describe("Capture date and time for Image 2 in ISO format (AAAA-MM-DDTHH:MM:SS)"),
+  })
 });
-export type CompareWoundReportsInput = z.infer<typeof CompareWoundReportsInputSchema>;
+export type CompareWoundImagesInput = z.infer<typeof CompareWoundImagesInputSchema>;
+export type CompareWoundImagesOutput = z.infer<typeof CompareWoundImagesOutputSchema>;
 
-export type CompareWoundReportsOutput = CompareWoundImagesOutput;
 
-
-export async function compareWoundReports(input: CompareWoundReportsInput): Promise<CompareWoundReportsOutput> {
-  return compareWoundReportsFlow(input);
+export async function compareWoundImages(input: CompareWoundImagesInput): Promise<CompareWoundImagesOutput> {
+  return compareWoundImagesFlow(input);
 }
 
 const prompt = ai.definePrompt({
-  name: 'compareWoundReportsPrompt',
-  input: {schema: CompareWoundReportsInputSchema},
+  name: 'compareWoundImagesPrompt',
+  input: {schema: CompareWoundImagesInputSchema},
   output: {schema: CompareWoundImagesOutputSchema},
   prompt: `
-IMPORTANTE: Você deve realizar uma análise MULTIMODAL completa, considerando TANTO o conteúdo textual dos relatórios QUANTO as imagens fornecidas. A análise deve integrar informações visuais e textuais para gerar um relatório comparativo abrangente.
-
-Este documento visa fornecer uma base de conhecimento abrangente sobre a classificação de feridas, as técnicas de processamento de imagens médicas aplicadas a elas e como a API Gemini pode ser utilizada para automatizar a análise e a geração de relatórios comparativos de progressão de feridas. O objetivo é capacitar a API Gemini a "entender" e comparar tanto imagens quanto relatórios textuais de feridas, tornando-a uma ferramenta valiosa no campo da dermatologia e enfermagem especializada em feridas.
+Este documento visa fornecer uma base de conhecimento abrangente sobre a classificação de feridas, as técnicas de processamento de imagens médicas aplicadas a elas e como a API Gemini pode ser utilizada para automatizar a análise e a geração de relatórios comparativos de progressão de feridas. O objetivo é capacitar a API Gemini a "entender" e comparar imagens de feridas, tornando-a uma ferramenta valiosa no campo da dermatologia e enfermagem especializada em feridas.
 
 1. Classificação e Análise de Feridas
 
@@ -312,53 +311,18 @@ Progressão:
 Conclusão: A ferida apresenta progressão positiva na cicatrização entre o Dia 1 e o Dia 7, com redução de tamanho, aumento de tecido de granulação e melhora da condição da pele perilesional.
 Este exemplo demonstra como a API Gemini pode sintetizar informações visuais e contextuais em um relatório claro e acionável, facilitando o monitoramento e a tomada de decisões clínicas.
 
-
-Dados para Análise:
-
-Conjunto 1 (Data: {{report1Date}}):
----
-Relatório 1: {{{report1Content}}}
----
 Imagem 1: {{media url=image1DataUri}}
----
+Metadados Imagem 1: {{{image1Metadata}}}
 
-Conjunto 2 (Data: {{report2Date}}):
----
-Relatório 2: {{{report2Content}}}
----
 Imagem 2: {{media url=image2DataUri}}
----
-
-INSTRUÇÕES ESPECÍFICAS PARA ANÁLISE MULTIMODAL:
-
-1. ANÁLISE INTEGRADA: Combine as informações do relatório textual com os dados visuais extraídos das imagens. Por exemplo:
-   - Se o relatório menciona "área de 5cm²" e a imagem mostra uma ferida, use ambos os dados para validar e complementar a análise
-   - Se o relatório descreve "tecido de granulação vermelho" e a imagem confirma essa cor, integre essas informações
-   - Se há discrepâncias entre texto e imagem, documente-as no relatório
-
-2. VALIDAÇÃO CRUZADA: Use o relatório textual para contextualizar e validar as observações visuais:
-   - Confirme medições mencionadas no texto com as medições visuais
-   - Compare descrições de cor e textura do texto com a análise visual
-   - Use informações clínicas do texto para interpretar achados visuais
-
-3. ANÁLISE COMPARATIVA: Para cada parâmetro (área, cor, textura, etc.):
-   - Extraia dados quantitativos das imagens
-   - Compare com informações textuais dos relatórios
-   - Calcule mudanças baseadas em ambos os conjuntos de dados
-   - Gere conclusões que integrem evidências visuais e textuais
-
-4. RELATÓRIO FINAL: O relatório comparativo deve:
-   - Mencionar especificamente dados extraídos das imagens
-   - Referenciar informações dos relatórios textuais
-   - Mostrar como os dois tipos de dados se complementam
-   - Indicar quando há concordância ou discordância entre texto e imagem
+Metadados Imagem 2: {{{image2Metadata}}}
 `,
 });
 
-const compareWoundReportsFlow = ai.defineFlow(
+const compareWoundImagesFlow = ai.defineFlow(
   {
-    name: 'compareWoundReportsFlow',
-    inputSchema: CompareWoundReportsInputSchema,
+    name: 'compareWoundImagesFlow',
+    inputSchema: CompareWoundImagesInputSchema,
     outputSchema: CompareWoundImagesOutputSchema,
   },
   async input => {

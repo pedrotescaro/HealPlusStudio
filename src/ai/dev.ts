@@ -1,5 +1,6 @@
 import { config } from 'dotenv';
 config();
 
-import '@/ai/flows/ai-wound-risk-assessment.ts';
-import '@/ai/flows/summarize-wound-healing-progress.ts';
+import '@/ai/schemas.ts';
+import '@/ai/flows/compare-wound-images.ts';
+import '@/ai/flows/compare-wound-reports.ts';
