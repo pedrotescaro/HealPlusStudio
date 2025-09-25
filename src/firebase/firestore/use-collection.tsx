@@ -9,9 +9,6 @@ import {
   QuerySnapshot,
   collection,
   query,
-  where,
-  orderBy,
-  limit,
   collectionGroup,
   QueryConstraint,
 } from 'firebase/firestore';
@@ -49,15 +46,18 @@ export interface InternalQuery extends Query<DocumentData> {
  * It memoizes the query internally based on the path and query constraints.
  * 
  * @template T Optional type for document data. Defaults to any.
- * @param {string | null | undefined} path - The path to the collection.
- * @param {QueryConstraint[]} queryConstraints - An array of query constraints from Firestore (where, orderBy, limit).
+ * @param {string | null | undefined} pathOrCollectionGroupId - The path to the collection or the ID of the collection group.
+ * @param {object} options - Configuration for the query.
+ * @param {boolean} [options.isGroup=false] - Set to true if querying a collection group.
+ * @param {QueryConstraint[]} [options.constraints=[]] - An array of query constraints (where, orderBy, limit).
  * @returns {UseCollectionResult<T>} Object with data, isLoading, error.
  */
 export function useCollection<T = any>(
-    path: string | null | undefined,
-    ...queryConstraints: QueryConstraint[]
+    pathOrCollectionGroupId: string | null | undefined,
+    options: { isGroup?: boolean; constraints?: QueryConstraint[] } = {}
 ): UseCollectionResult<T> {
   const { firestore } = useFirebase();
+  const { isGroup = false, constraints = [] } = options;
   type ResultItemType = WithId<T>;
   type StateDataType = ResultItemType[] | null;
 
@@ -65,22 +65,21 @@ export function useCollection<T = any>(
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
-  // Memoize the query reference itself. The effect will re-run if firestore, path, or the constraints' string representation changes.
+  // Memoize the query reference itself.
   const memoizedQuery = useMemo(() => {
-    if (!firestore || !path) return null;
+    if (!firestore || !pathOrCollectionGroupId) return null;
 
     try {
-        // A collection path with an even number of segments is a collection, odd is a document.
-        // A collectionGroup query path will NOT contain a '/'.
-        const isCollectionGroupQuery = !path.includes('/');
-        const baseQuery = isCollectionGroupQuery ? collectionGroup(firestore, path) : collection(firestore, path);
-        return query(baseQuery, ...queryConstraints);
+        const baseQuery = isGroup
+            ? collectionGroup(firestore, pathOrCollectionGroupId)
+            : collection(firestore, pathOrCollectionGroupId);
+        return query(baseQuery, ...constraints);
     } catch (e) {
       console.error("Failed to create Firestore query:", e);
       return null;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [firestore, path, JSON.stringify(queryConstraints)]);
+  }, [firestore, pathOrCollectionGroupId, isGroup, JSON.stringify(constraints)]);
 
 
   useEffect(() => {

@@ -61,7 +61,6 @@ export default function ReportsPage() {
   const { toast } = useToast();
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { firestore } = useFirebase();
   const [reportToDelete, setReportToDelete] = useState<string | null>(null);
   const [reportToView, setReportToView] = useState<StoredReport | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -70,12 +69,14 @@ export default function ReportsPage() {
   const { data: reports, isLoading: loading } = useCollection<StoredReport>(
     user?.role === 'professional' ? (user ? `users/${user.uid}/reports` : null) : 'reports',
     user?.role === 'professional' 
-        ? orderBy("createdAt", "desc") 
-        : where("patientId", "==", user?.uid || '')
+      ? { constraints: [orderBy("createdAt", "desc")] }
+      : { isGroup: true, constraints: [where("patientId", "==", user?.uid || ''), orderBy("createdAt", "desc")] }
   );
   
   const handleDelete = async () => {
-    if (!reportToDelete || !user || user.role !== 'professional' || !firestore) return;
+    if (!reportToDelete || !user || user.role !== 'professional') return;
+    const { firestore } = useFirebase();
+    if (!firestore) return;
     
     const docRef = doc(firestore, "users", user.uid, "reports", reportToDelete);
     
@@ -99,7 +100,10 @@ export default function ReportsPage() {
   };
 
   const handleSavePdf = async (report: StoredReport | null) => {
-    if (!report || !user || !firestore) return;
+    if (!report || !user) return;
+    const { firestore } = useFirebase();
+    if (!firestore) return;
+
     setCurrentReportForPdf(report);
     setPdfLoading(true);
 

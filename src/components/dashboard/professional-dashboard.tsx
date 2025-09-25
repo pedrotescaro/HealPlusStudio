@@ -51,7 +51,6 @@ type StoredAnamnesis = AnamnesisFormValues & { id: string };
 
 export function ProfessionalDashboard() {
   const { user } = useAuth();
-  const { firestore } = useFirebase();
   const { t } = useTranslation();
   const router = useRouter();
   const { toast } = useToast();
@@ -70,7 +69,7 @@ export function ProfessionalDashboard() {
 
   const { data: allAnamneses, isLoading: anamnesisLoading } = useCollection<StoredAnamnesis>(
     user ? `users/${user.uid}/anamnesis` : null,
-    orderBy("data_consulta", "desc")
+    { constraints: [orderBy("data_consulta", "desc")] }
   );
 
   const { data: allReports, isLoading: reportsLoading } = useCollection(
@@ -124,7 +123,10 @@ export function ProfessionalDashboard() {
   const recentAnamneses = useMemo(() => allAnamneses?.slice(0, 5) ?? [], [allAnamneses]);
 
   const handleDelete = async () => {
-    if (!recordToDelete || !user || !firestore) return;
+    if (!recordToDelete || !user) return;
+    const { firestore } = useFirebase();
+    if (!firestore) return;
+
     const docRef = doc(firestore, "users", user.uid, "anamnesis", recordToDelete);
     deleteDoc(docRef)
       .then(() => {
@@ -440,7 +442,7 @@ export function ProfessionalDashboard() {
               </div>
               <p className="text-sm text-muted-foreground">Avaliações este mês</p>
               <p className="text-xs text-muted-foreground mt-1">
-                {loading ? '...' : (dashboardStats.totalEvaluations > 0 
+                {loading ? '...' : (dashboardStats.totalEvaluations > 0  && dashboardStats.totalPatients > 0
                   ? `${Math.round((dashboardStats.thisMonthEvaluations / dashboardStats.totalEvaluations) * 100)}% do total`
                   : '0% do total')
                 }
