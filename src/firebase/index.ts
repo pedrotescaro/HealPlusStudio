@@ -17,6 +17,7 @@ export function initializeFirebase() {
     try {
       // Attempt to initialize via Firebase App Hosting environment variables
       firebaseApp = initializeApp();
+      console.log('Firebase initialized with App Hosting environment variables');
     } catch (e) {
       // Only warn in production because it's normal to use the firebaseConfig to initialize
       // during development
@@ -24,6 +25,7 @@ export function initializeFirebase() {
         console.warn('Automatic initialization failed. Falling back to firebase config object.', e);
       }
       firebaseApp = initializeApp(firebaseConfig);
+      console.log('Firebase initialized with config object');
     }
 
     return getSdks(firebaseApp);
@@ -37,14 +39,24 @@ export function getSdks(firebaseApp: FirebaseApp) {
   let database = null;
   try {
     database = getDatabase(firebaseApp);
+    console.log('Realtime Database initialized successfully');
   } catch (error) {
     console.warn('Realtime Database not available:', error);
   }
   
+  const auth = getAuth(firebaseApp);
+  const firestore = getFirestore(firebaseApp);
+  
+  console.log('Firebase SDKs initialized:', {
+    auth: !!auth,
+    firestore: !!firestore,
+    database: !!database
+  });
+  
   return {
     firebaseApp,
-    auth: getAuth(firebaseApp),
-    firestore: getFirestore(firebaseApp),
+    auth,
+    firestore,
     database, // Realtime Database SDK (may be null if not available)
   };
 }

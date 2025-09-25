@@ -94,27 +94,29 @@ export function useCollection<T = any>(
             setIsLoading(false);
           }
         },
-        (error: FirestoreError) => {
-          console.error('Firestore error in useCollection:', error);
-          
-          // This logic extracts the path from either a ref or a query
-          const path: string =
-            memoizedTargetRefOrQuery.type === 'collection'
-              ? (memoizedTargetRefOrQuery as CollectionReference).path
-              : (memoizedTargetRefOrQuery as unknown as InternalQuery)._query.path.canonicalString()
+      (error: FirestoreError) => {
+        console.error('Firestore error in useCollection:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        
+        // This logic extracts the path from either a ref or a query
+        const path: string =
+          memoizedTargetRefOrQuery.type === 'collection'
+            ? (memoizedTargetRefOrQuery as CollectionReference).path
+            : (memoizedTargetRefOrQuery as unknown as InternalQuery)._query.path.canonicalString()
 
-          const contextualError = new FirestorePermissionError({
-            operation: 'list',
-            path,
-          })
+        const contextualError = new FirestorePermissionError({
+          operation: 'list',
+          path,
+        })
 
-          setError(contextualError)
-          setData(null)
-          setIsLoading(false)
+        setError(contextualError)
+        setData(null)
+        setIsLoading(false)
 
-          // trigger global error propagation
-          errorEmitter.emit('permission-error', contextualError);
-        }
+        // trigger global error propagation
+        errorEmitter.emit('permission-error', contextualError);
+      }
       );
     } catch (setupError) {
       console.error('Error setting up Firestore listener:', setupError);

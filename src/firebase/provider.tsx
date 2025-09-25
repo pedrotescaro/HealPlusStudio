@@ -80,6 +80,13 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       auth,
       (firebaseUser) => { // Auth state determined
         try {
+          console.log('FirebaseProvider: Auth state changed:', {
+            user: firebaseUser ? {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName
+            } : null
+          });
           setUserAuthState({ user: firebaseUser, isUserLoading: false, userError: null });
         } catch (stateError) {
           console.error("FirebaseProvider: Error setting user state:", stateError);
