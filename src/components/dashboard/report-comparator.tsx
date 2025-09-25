@@ -41,7 +41,7 @@ interface StoredReport {
   professionalId: string;
 }
 
-const isAIEnabled = !!process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+const isAIEnabled = true;
 
 type ProgressMetrics = {
     areaChange: number;
