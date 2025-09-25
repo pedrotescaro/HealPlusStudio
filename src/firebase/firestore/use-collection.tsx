@@ -128,7 +128,15 @@ export function useCollection<T = any>(
         }
       },
       (error: FirestoreError) => {
-        const path: string = (memoizedQuery as unknown as InternalQuery)._query.path.toString()
+        console.error('Firestore error in useCollection:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+
+        // This logic extracts the path from either a ref or a query
+        const path: string =
+          memoizedQuery.type === 'collection'
+            ? (memoizedQuery as CollectionReference).path
+            : (memoizedQuery as unknown as InternalQuery)._query.path.canonicalString()
 
         const contextualError = new FirestorePermissionError({
           operation: 'list',
