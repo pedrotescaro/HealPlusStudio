@@ -43,7 +43,7 @@ export function SettingsForm() {
   };
   
   const handleFontSizeChange = (value: string) => {
-    setFontSize(parseFloat(value));
+    setFontSize(parseFloat(value) as 0.8 | 0.9 | 1.0 | 1.1 | 1.2);
   };
 
   return (

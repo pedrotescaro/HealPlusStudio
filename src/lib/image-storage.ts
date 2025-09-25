@@ -1,8 +1,13 @@
 "use client";
 
-import { realtimeDb } from '@/firebase/client-app';
-import { ref, set, get, child } from 'firebase/database';
+import { getDatabase, ref, set, get, child } from 'firebase/database';
+import { initializeFirebase } from '@/firebase'; // Use the central initializer
 import { v4 as uuidv4 } from 'uuid';
+
+// Initialize Firebase and get the database instance
+const { firebaseApp } = initializeFirebase();
+const realtimeDb = getDatabase(firebaseApp);
+
 
 type ImageMetadata = {
   fileName: string;
