@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, ClipboardList, PlusCircle, MoreHorizontal, Trash2, Eye, Edit, Loader2, CalendarDays, Users, CopyCheck, MessageSquare, TrendingUp, BarChart3, Clock, CheckCircle, AlertCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import type { AnamnesisFormValues } from "@/lib/anamnesis-schema";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -38,11 +38,13 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { useFirebase } from "@/firebase";
-import { collection, query, getDocs, orderBy, limit, doc, deleteDoc } from "firebase/firestore";
+import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, orderBy, limit, doc, deleteDoc } from "firebase/firestore";
 import { ActivitySummaryChart } from "@/components/dashboard/activity-summary-chart";
 import { useTranslation } from "@/contexts/app-provider";
 import { AnamnesisDetailsView } from "@/components/dashboard/anamnesis-details-view";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 type StoredAnamnesis = AnamnesisFormValues & { id: string };
 
@@ -52,8 +54,7 @@ export function ProfessionalDashboard() {
   const { t } = useTranslation();
   const router = useRouter();
   const { toast } = useToast();
-  const [recentAnamneses, setRecentAnamneses] = useState<StoredAnamnesis[]>([]);
-  const [loading, setLoading] = useState(true);
+  
   const [recordToDelete, setRecordToDelete] = useState<string | null>(null);
   const [recordToView, setRecordToView] = useState<StoredAnamnesis | null>(null);
   const [activityData, setActivityData] = useState<{ name: string; value: number }[]>([]);
@@ -66,94 +67,84 @@ export function ProfessionalDashboard() {
     thisMonthEvaluations: 0
   });
 
+  const anamnesisCollectionQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return query(collection(firestore, "users", user.uid, "anamnesis"), orderBy("data_consulta", "desc"));
+  }, [user, firestore]);
+
+  const reportsCollectionQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return collection(firestore, "users", user.uid, "reports");
+  }, [user, firestore]);
+
+  const comparisonsCollectionQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return collection(firestore, "users", user.uid, "comparisons");
+  }, [user, firestore]);
+
+  const { data: allAnamneses, isLoading: anamnesisLoading } = useCollection<StoredAnamnesis>(anamnesisCollectionQuery);
+  const { data: allReports, isLoading: reportsLoading } = useCollection(reportsCollectionQuery);
+  const { data: allComparisons, isLoading: comparisonsLoading } = useCollection(comparisonsCollectionQuery);
+
+  const loading = anamnesisLoading || reportsLoading || comparisonsLoading;
+
   useEffect(() => {
-    const fetchData = async () => {
-      if (!user || !firestore) {
-        setLoading(false);
-        return;
-      }
-      try {
-        // Fetch recent records
-        const recentQuery = query(
-          collection(firestore, "users", user.uid, "anamnesis"),
-          orderBy("data_consulta", "desc"),
-          limit(5)
-        );
-        const recentSnapshot = await getDocs(recentQuery);
-        const records = recentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredAnamnesis));
-        setRecentAnamneses(records);
+    if (loading || !allAnamneses) return;
 
-        // Fetch activity counts
-        const [anamnesisSnapshot, reportsSnapshot, comparisonsSnapshot] = await Promise.all([
-          getDocs(collection(firestore, "users", user.uid, "anamnesis")),
-          getDocs(collection(firestore, "users", user.uid, "reports")),
-          getDocs(collection(firestore, "users", user.uid, "comparisons")),
-        ]);
+    try {
+      const anamnesisCount = allAnamneses.length;
+      const reportsCount = allReports?.length ?? 0;
+      const comparisonsCount = allComparisons?.length ?? 0;
+      
+      const uniquePatients = new Set(allAnamneses.map(record => record.nome_cliente)).size;
+      
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      const thisMonthEvaluations = allAnamneses.filter(record => {
+        const recordDate = new Date(record.data_consulta);
+        return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
+      }).length;
 
-        const anamnesisCount = anamnesisSnapshot.size;
-        const reportsCount = reportsSnapshot.size;
-        const comparisonsCount = comparisonsSnapshot.size;
+      setActivityData([
+          { name: "completedForms", value: anamnesisCount },
+          { name: "generatedReports", value: reportsCount },
+          { name: "comparisons", value: comparisonsCount },
+      ]);
 
-        // Usar dados já carregados para estatísticas
-        const allAnamnesis = anamnesisSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredAnamnesis));
-        
-        // Contar pacientes únicos
-        const uniquePatients = new Set(allAnamnesis.map(record => record.nome_cliente)).size;
-        
-        // Contar avaliações deste mês
-        const currentMonth = new Date().getMonth();
-        const currentYear = new Date().getFullYear();
-        const thisMonthEvaluations = allAnamnesis.filter(record => {
-          const recordDate = new Date(record.data_consulta);
-          return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
-        }).length;
+      setDashboardStats({
+        totalPatients: uniquePatients,
+        totalEvaluations: anamnesisCount,
+        totalReports: reportsCount,
+        totalComparisons: comparisonsCount,
+        pendingEvaluations: 0, 
+        thisMonthEvaluations: thisMonthEvaluations
+      });
 
-        setActivityData([
-            { name: "completedForms", value: anamnesisCount },
-            { name: "generatedReports", value: reportsCount },
-            { name: "comparisons", value: comparisonsCount },
-        ]);
-
-        setDashboardStats({
-          totalPatients: uniquePatients,
-          totalEvaluations: anamnesisCount,
-          totalReports: reportsCount,
-          totalComparisons: comparisonsCount,
-          pendingEvaluations: 0, // Pode ser implementado futuramente
-          thisMonthEvaluations: thisMonthEvaluations
-        });
-
-      } catch (error) {
-        console.error("Error fetching dashboard data from Firestore: ", error);
-        toast({ title: t.errorTitle, description: t.dashboardErrorLoading, variant: "destructive" });
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (user) {
-      fetchData();
+    } catch (error) {
+      console.error("Error processing dashboard data: ", error);
+      toast({ title: t.errorTitle, description: t.dashboardErrorLoading, variant: "destructive" });
     }
-  }, [user, firestore, toast, t]);
+  }, [allAnamneses, allReports, allComparisons, loading, toast, t]);
+
+  const recentAnamneses = useMemo(() => allAnamneses?.slice(0, 5) ?? [], [allAnamneses]);
 
   const handleDelete = async () => {
     if (!recordToDelete || !user || !firestore) return;
-    try {
-      await deleteDoc(doc(firestore, "users", user.uid, "anamnesis", recordToDelete));
-      setRecentAnamneses(recentAnamneses.filter(record => record.id !== recordToDelete));
-      toast({
-        title: t.deleteRecordTitle,
-        description: t.deleteRecordDescription,
+    const docRef = doc(firestore, "users", user.uid, "anamnesis", recordToDelete);
+    deleteDoc(docRef)
+      .then(() => {
+        toast({
+          title: t.deleteRecordTitle,
+          description: t.deleteRecordDescription,
+        });
+      })
+      .catch((serverError) => {
+        const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'delete' });
+        errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => {
+        setRecordToDelete(null);
       });
-    } catch (error) {
-      toast({
-        title: t.errorTitle,
-        description: t.deleteRecordError,
-        variant: "destructive",
-      });
-      console.error("Failed to delete anamnesis record from Firestore", error);
-    } finally {
-      setRecordToDelete(null);
-    }
   };
   
   const handleEdit = (id: string) => {
@@ -167,13 +158,12 @@ export function ProfessionalDashboard() {
         <p className="text-muted-foreground text-sm sm:text-base">Gerencie suas avaliações, relatórios e pacientes em um só lugar.</p>
       </div>
 
-      {/* Estatísticas Detalhadas */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         <Card className="text-center">
           <CardContent className="pt-6">
             <div className="flex flex-col items-center space-y-2">
               <Users className="h-8 w-8 text-primary" />
-              <div className="text-2xl font-bold">{dashboardStats.totalPatients}</div>
+              <div className="text-2xl font-bold">{loading ? <Loader2 className="h-6 w-6 animate-spin" /> : dashboardStats.totalPatients}</div>
               <p className="text-xs text-muted-foreground">Pacientes Atendidos</p>
             </div>
           </CardContent>
@@ -183,7 +173,7 @@ export function ProfessionalDashboard() {
           <CardContent className="pt-6">
             <div className="flex flex-col items-center space-y-2">
               <ClipboardList className="h-8 w-8 text-primary" />
-              <div className="text-2xl font-bold">{dashboardStats.totalEvaluations}</div>
+              <div className="text-2xl font-bold">{loading ? <Loader2 className="h-6 w-6 animate-spin" /> : dashboardStats.totalEvaluations}</div>
               <p className="text-xs text-muted-foreground">Avaliações Realizadas</p>
             </div>
           </CardContent>
@@ -193,7 +183,7 @@ export function ProfessionalDashboard() {
           <CardContent className="pt-6">
             <div className="flex flex-col items-center space-y-2">
               <FileText className="h-8 w-8 text-primary" />
-              <div className="text-2xl font-bold">{dashboardStats.totalReports}</div>
+              <div className="text-2xl font-bold">{loading ? <Loader2 className="h-6 w-6 animate-spin" /> : dashboardStats.totalReports}</div>
               <p className="text-xs text-muted-foreground">Relatórios Gerados</p>
             </div>
           </CardContent>
@@ -203,7 +193,7 @@ export function ProfessionalDashboard() {
           <CardContent className="pt-6">
             <div className="flex flex-col items-center space-y-2">
               <CopyCheck className="h-8 w-8 text-primary" />
-              <div className="text-2xl font-bold">{dashboardStats.totalComparisons}</div>
+              <div className="text-2xl font-bold">{loading ? <Loader2 className="h-6 w-6 animate-spin" /> : dashboardStats.totalComparisons}</div>
               <p className="text-xs text-muted-foreground">Comparações Realizadas</p>
             </div>
           </CardContent>
@@ -213,7 +203,7 @@ export function ProfessionalDashboard() {
           <CardContent className="pt-6">
             <div className="flex flex-col items-center space-y-2">
               <TrendingUp className="h-8 w-8 text-primary" />
-              <div className="text-2xl font-bold">{dashboardStats.thisMonthEvaluations}</div>
+              <div className="text-2xl font-bold">{loading ? <Loader2 className="h-6 w-6 animate-spin" /> : dashboardStats.thisMonthEvaluations}</div>
               <p className="text-xs text-muted-foreground">Este Mês</p>
             </div>
           </CardContent>
@@ -224,7 +214,7 @@ export function ProfessionalDashboard() {
             <div className="flex flex-col items-center space-y-2">
               <BarChart3 className="h-8 w-8 text-primary" />
               <div className="text-2xl font-bold">
-                {dashboardStats.totalEvaluations > 0 ? Math.round((dashboardStats.totalReports / dashboardStats.totalEvaluations) * 100) : 0}%
+                {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : (dashboardStats.totalEvaluations > 0 ? Math.round((dashboardStats.totalReports / dashboardStats.totalEvaluations) * 100) : 0) + '%'}
               </div>
               <p className="text-xs text-muted-foreground">Taxa de Relatórios</p>
             </div>
@@ -451,13 +441,13 @@ export function ProfessionalDashboard() {
             <div className="text-center p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg border border-primary/20">
               <TrendingUp className="h-8 w-8 text-primary mx-auto mb-2" />
               <div className="text-2xl font-bold text-primary">
-                {dashboardStats.thisMonthEvaluations}
+                {loading ? <Loader2 className="h-6 w-6 animate-spin mx-auto" /> : dashboardStats.thisMonthEvaluations}
               </div>
               <p className="text-sm text-muted-foreground">Avaliações este mês</p>
               <p className="text-xs text-muted-foreground mt-1">
-                {dashboardStats.totalEvaluations > 0 
+                {loading ? '...' : (dashboardStats.totalEvaluations > 0 
                   ? `${Math.round((dashboardStats.thisMonthEvaluations / dashboardStats.totalEvaluations) * 100)}% do total`
-                  : '0% do total'
+                  : '0% do total')
                 }
               </p>
             </div>
@@ -466,14 +456,14 @@ export function ProfessionalDashboard() {
             <div className="text-center p-4 bg-gradient-to-br from-blue-500/5 to-blue-500/10 rounded-lg border border-blue-500/20">
               <BarChart3 className="h-8 w-8 text-blue-600 mx-auto mb-2" />
               <div className="text-2xl font-bold text-blue-600">
-                {dashboardStats.totalEvaluations > 0 
+                {loading ? <Loader2 className="h-6 w-6 animate-spin mx-auto" /> : (dashboardStats.totalEvaluations > 0 
                   ? Math.round((dashboardStats.totalReports / dashboardStats.totalEvaluations) * 100) 
-                  : 0
+                  : 0)
                 }%
               </div>
               <p className="text-sm text-muted-foreground">Taxa de relatórios</p>
               <p className="text-xs text-muted-foreground mt-1">
-                {dashboardStats.totalReports} de {dashboardStats.totalEvaluations} avaliações
+                {loading ? '...' : `${dashboardStats.totalReports} de ${dashboardStats.totalEvaluations} avaliações`}
               </p>
             </div>
 
@@ -481,13 +471,13 @@ export function ProfessionalDashboard() {
             <div className="text-center p-4 bg-gradient-to-br from-green-500/5 to-green-500/10 rounded-lg border border-green-500/20">
               <Users className="h-8 w-8 text-green-600 mx-auto mb-2" />
               <div className="text-2xl font-bold text-green-600">
-                {dashboardStats.totalPatients}
+                {loading ? <Loader2 className="h-6 w-6 animate-spin mx-auto" /> : dashboardStats.totalPatients}
               </div>
               <p className="text-sm text-muted-foreground">Pacientes únicos</p>
               <p className="text-xs text-muted-foreground mt-1">
-                {dashboardStats.totalEvaluations > 0 && dashboardStats.totalPatients > 0
+                {loading ? '...' : (dashboardStats.totalEvaluations > 0  && dashboardStats.totalPatients > 0
                   ? `${(dashboardStats.totalEvaluations / dashboardStats.totalPatients).toFixed(1)} avaliações/paciente`
-                  : '0 avaliações/paciente'
+                  : '0 avaliações/paciente')
                 }
               </p>
             </div>
@@ -496,7 +486,7 @@ export function ProfessionalDashboard() {
             <div className="text-center p-4 bg-gradient-to-br from-purple-500/5 to-purple-500/10 rounded-lg border border-purple-500/20">
               <CopyCheck className="h-8 w-8 text-purple-600 mx-auto mb-2" />
               <div className="text-2xl font-bold text-purple-600">
-                {dashboardStats.totalComparisons}
+                {loading ? <Loader2 className="h-6 w-6 animate-spin mx-auto" /> : dashboardStats.totalComparisons}
               </div>
               <p className="text-sm text-muted-foreground">Comparações realizadas</p>
               <p className="text-xs text-muted-foreground mt-1">
@@ -510,14 +500,12 @@ export function ProfessionalDashboard() {
       {/* Alert Dialog for Deletion */}
       <AlertDialog open={!!recordToDelete} onOpenChange={(open) => !open && setRecordToDelete(null)}>
         <AlertDialogContent>
-          {/* @ts-ignore */}
           <AlertDialogHeader>
             <AlertDialogTitle>{t.areYouSure}</AlertDialogTitle>
             <AlertDialogDescription>
               {t.deleteConfirmation}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {/* @ts-ignore */}
           <AlertDialogFooter>
             <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete}>{t.delete}</AlertDialogAction>
@@ -528,7 +516,6 @@ export function ProfessionalDashboard() {
       {/* Dialog for Viewing Details */}
       <Dialog open={!!recordToView} onOpenChange={(open) => !open && setRecordToView(null)}>
         <DialogContent className="max-w-3xl">
-          {/* @ts-ignore */}
           <DialogHeader>
             <DialogTitle>{t.anamnesisDetailsTitle}</DialogTitle>
             <DialogDescription>
