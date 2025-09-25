@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useAuth } from "@/hooks/use-auth";
 import Link from "next/link";
@@ -39,14 +39,12 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useFirebase } from "@/firebase";
-import { useCollection } from "@/firebase/firestore/use-collection";
-import { doc, deleteDoc } from "firebase/firestore";
+import { collection, doc, deleteDoc, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { ActivitySummaryChart } from "@/components/dashboard/activity-summary-chart";
 import { useTranslation } from "@/contexts/app-provider";
 import { AnamnesisDetailsView } from "@/components/dashboard/anamnesis-details-view";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
-import { orderBy, limit } from "firebase/firestore";
 
 type StoredAnamnesis = AnamnesisFormValues & { id: string };
 
@@ -69,45 +67,72 @@ export function ProfessionalDashboard() {
     thisMonthEvaluations: 0
   });
 
-  const { data: recentAnamneses, isLoading: loading } = useCollection<StoredAnamnesis>('anamnesis', {
-    constraints: [orderBy("data_consulta", "desc"), limit(5)],
-  });
-
-  const { data: allAnamneses } = useCollection<StoredAnamnesis>('anamnesis');
-  const { data: allReports } = useCollection<any>('reports');
-  const { data: allComparisons } = useCollection<any>('comparisons');
+  const [recentAnamneses, setRecentAnamneses] = useState<StoredAnamnesis[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if(allAnamneses && allReports && allComparisons) {
-      const anamnesisCount = allAnamneses.length;
-      const reportsCount = allReports.length;
-      const comparisonsCount = allComparisons.length;
-      
-      const uniquePatients = new Set(allAnamneses.map(record => record.nome_cliente)).size;
-      
-      const currentMonth = new Date().getMonth();
-      const currentYear = new Date().getFullYear();
-      const thisMonthEvaluations = allAnamneses.filter(record => {
-        const recordDate = new Date(record.data_consulta);
-        return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
-      }).length;
+    if (user && firestore) {
+      const fetchRecentAnamneses = async () => {
+        setLoading(true);
+        try {
+          const q = query(collection(firestore, "users", user.uid, "anamnesis"), orderBy("data_consulta", "desc"), limit(5));
+          const querySnapshot = await getDocs(q);
+          const records = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredAnamnesis));
+          setRecentAnamneses(records);
+        } catch (error) {
+          console.error("Error fetching recent anamnesis records:", error);
+          toast({ title: t.errorTitle, description: "Could not fetch recent assessments.", variant: "destructive" });
+        } finally {
+          setLoading(false);
+        }
+      };
 
-      setActivityData([
-          { name: "completedForms", value: anamnesisCount },
-          { name: "generatedReports", value: reportsCount },
-          { name: "comparisons", value: comparisonsCount },
-      ]);
+      const fetchAllDataForStats = async () => {
+        try {
+            const anamnesisQuery = query(collection(firestore, "users", user.uid, "anamnesis"));
+            const reportsQuery = query(collection(firestore, "users", user.uid, "reports"));
+            const comparisonsQuery = query(collection(firestore, "users", user.uid, "comparisons"));
 
-      setDashboardStats({
-        totalPatients: uniquePatients,
-        totalEvaluations: anamnesisCount,
-        totalReports: reportsCount,
-        totalComparisons: comparisonsCount,
-        pendingEvaluations: 0, 
-        thisMonthEvaluations: thisMonthEvaluations
-      });
+            const [anamnesisSnapshot, reportsSnapshot, comparisonsSnapshot] = await Promise.all([
+                getDocs(anamnesisQuery),
+                getDocs(reportsQuery),
+                getDocs(comparisonsQuery),
+            ]);
+
+            const allAnamneses = anamnesisSnapshot.docs.map(doc => doc.data() as AnamnesisFormValues);
+            const uniquePatients = new Set(allAnamneses.map(record => record.nome_cliente)).size;
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+            const thisMonthEvaluations = allAnamneses.filter(record => {
+                const recordDate = new Date(record.data_consulta);
+                return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
+            }).length;
+
+            setActivityData([
+                { name: "completedForms", value: anamnesisSnapshot.size },
+                { name: "generatedReports", value: reportsSnapshot.size },
+                { name: "comparisons", value: comparisonsSnapshot.size },
+            ]);
+
+            setDashboardStats({
+                totalPatients: uniquePatients,
+                totalEvaluations: anamnesisSnapshot.size,
+                totalReports: reportsSnapshot.size,
+                totalComparisons: comparisonsSnapshot.size,
+                pendingEvaluations: 0,
+                thisMonthEvaluations: thisMonthEvaluations
+            });
+        } catch (error) {
+            console.error("Error fetching stats:", error);
+            toast({ title: t.errorTitle, description: t.dashboardErrorLoading, variant: "destructive" });
+        }
+      };
+      
+      fetchRecentAnamneses();
+      fetchAllDataForStats();
     }
-  }, [allAnamneses, allReports, allComparisons]);
+  }, [user, firestore, t.errorTitle, t.dashboardErrorLoading, toast]);
+
 
   const handleDelete = async () => {
     if (!recordToDelete || !user || !firestore) return;
@@ -119,6 +144,7 @@ export function ProfessionalDashboard() {
           title: t.deleteRecordTitle,
           description: t.deleteRecordDescription,
         });
+        setRecentAnamneses(prev => prev.filter(rec => rec.id !== recordToDelete));
       })
       .catch((serverError) => {
         const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'delete' });
