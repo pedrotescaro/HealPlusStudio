@@ -9,7 +9,7 @@ import {
   summarizeWoundHealingProgress,
   SummarizeWoundHealingProgressOutput,
 } from '@/ai/flows/summarize-wound-healing-progress';
-import {patients} from './lib/data';
+import {patients} from '@/lib/data';
 
 export async function getWoundRiskAssessmentAction(
   patientId: string,
