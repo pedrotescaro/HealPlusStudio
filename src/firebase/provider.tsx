@@ -79,7 +79,12 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     const unsubscribe = onAuthStateChanged(
       auth,
       (firebaseUser) => { // Auth state determined
-        setUserAuthState({ user: firebaseUser, isUserLoading: false, userError: null });
+        try {
+          setUserAuthState({ user: firebaseUser, isUserLoading: false, userError: null });
+        } catch (stateError) {
+          console.error("FirebaseProvider: Error setting user state:", stateError);
+          setUserAuthState({ user: null, isUserLoading: false, userError: stateError as Error });
+        }
       },
       (error) => { // Auth listener error
         console.error("FirebaseProvider: onAuthStateChanged error:", error);
@@ -91,16 +96,29 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 
   // Memoize the context value
   const contextValue = useMemo((): FirebaseContextState => {
-    const servicesAvailable = !!(firebaseApp && firestore && auth);
-    return {
-      areServicesAvailable: servicesAvailable,
-      firebaseApp: servicesAvailable ? firebaseApp : null,
-      firestore: servicesAvailable ? firestore : null,
-      auth: servicesAvailable ? auth : null,
-      user: userAuthState.user,
-      isUserLoading: userAuthState.isUserLoading,
-      userError: userAuthState.userError,
-    };
+    try {
+      const servicesAvailable = !!(firebaseApp && firestore && auth);
+      return {
+        areServicesAvailable: servicesAvailable,
+        firebaseApp: servicesAvailable ? firebaseApp : null,
+        firestore: servicesAvailable ? firestore : null,
+        auth: servicesAvailable ? auth : null,
+        user: userAuthState.user,
+        isUserLoading: userAuthState.isUserLoading,
+        userError: userAuthState.userError,
+      };
+    } catch (contextError) {
+      console.error("FirebaseProvider: Error creating context value:", contextError);
+      return {
+        areServicesAvailable: false,
+        firebaseApp: null,
+        firestore: null,
+        auth: null,
+        user: null,
+        isUserLoading: false,
+        userError: contextError as Error,
+      };
+    }
   }, [firebaseApp, firestore, auth, userAuthState]);
 
   return (

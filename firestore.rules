@@ -133,6 +133,27 @@ service cloud.firestore {
       allow delete: if isOwner(userId);
     }
 
+    /**
+     * @description Rules for the /users/{userId}/anamnesis/{anamnesisId} collection.
+     * @path /users/{userId}/anamnesis/{anamnesisId}
+     * @allow (create) User with UID 'user123' can create an anamnesis at /users/user123/anamnesis/anamnesis456.
+     * @deny (create) User with UID 'user123' cannot create an anamnesis at /users/anotherUser/anamnesis/anamnesis456.
+     * @allow (get) User with UID 'user123' can get their anamnesis at /users/user123/anamnesis/anamnesis456.
+     * @deny (get) User with UID 'user123' cannot get anamnesis at /users/anotherUser/anamnesis/anamnesis456.
+     * @allow (update) User with UID 'user123' can update their anamnesis at /users/user123/anamnesis/anamnesis456.
+     * @deny (update) User with UID 'user123' cannot update anamnesis at /users/anotherUser/anamnesis/anamnesis456.
+     * @allow (delete) User with UID 'user123' can delete their anamnesis at /users/user123/anamnesis/anamnesis456.
+     * @deny (delete) User with UID 'user123' cannot delete anamnesis at /users/anotherUser/anamnesis/anamnesis456.
+     * @principle Enforces document ownership for writes and reads.
+     */
+    match /users/{userId}/anamnesis/{anamnesisId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
+    }
+
     // Allow server to bypass security rules
     match /admin/{document=**} {
       allow read, write: if request.auth.uid == "service-account";
