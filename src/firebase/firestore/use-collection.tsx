@@ -68,13 +68,12 @@ export function useCollection<T = any>(
   // Memoize the query reference itself. The effect will re-run if firestore, path, or the constraints' string representation changes.
   const memoizedQuery = useMemo(() => {
     if (!firestore || !path) return null;
-    
-    // Naive way to serialize constraints for dependency array. In a real-world scenario, a more robust serialization might be needed.
-    const constraintsString = queryConstraints.map(c => c.type + JSON.stringify(c)).join(',');
 
     try {
-        const isCollectionGroup = path.includes('/'); // Simple check, refine if needed.
-        const baseQuery = isCollectionGroup ? collectionGroup(firestore, path) : collection(firestore, path);
+        // A collection path with an even number of segments is a collection, odd is a document.
+        // A collectionGroup query path will NOT contain a '/'.
+        const isCollectionGroupQuery = !path.includes('/');
+        const baseQuery = isCollectionGroupQuery ? collectionGroup(firestore, path) : collection(firestore, path);
         return query(baseQuery, ...queryConstraints);
     } catch (e) {
       console.error("Failed to create Firestore query:", e);
@@ -112,7 +111,7 @@ export function useCollection<T = any>(
         }
       },
       (error: FirestoreError) => {
-        const path: string = (memoizedQuery as unknown as InternalQuery)._query.path.canonicalString();
+        const path: string = (memoizedQuery as unknown as InternalQuery)._query.path.canonicalString()
 
         const contextualError = new FirestorePermissionError({
           operation: 'list',

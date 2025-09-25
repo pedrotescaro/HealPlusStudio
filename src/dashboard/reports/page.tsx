@@ -69,7 +69,9 @@ export default function ReportsPage() {
 
   const { data: reports, isLoading: loading } = useCollection<StoredReport>(
     user?.role === 'professional' ? (user ? `users/${user.uid}/reports` : null) : 'reports',
-    user?.role === 'professional' ? orderBy("createdAt", "desc") : where("patientId", "==", user?.uid || '')
+    user?.role === 'professional' 
+        ? orderBy("createdAt", "desc") 
+        : where("patientId", "==", user?.uid || '')
   );
   
   const handleDelete = async () => {
