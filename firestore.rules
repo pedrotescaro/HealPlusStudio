@@ -1,37 +1,35 @@
 /**
- * @fileoverview Firestore Security Rules for the HealPlus application.
+ * @file Firestore Security Rules for HealPlus Application
  *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for all data. Each user has complete control over their own data tree, and no access to other users' data.
+ * @core_philosophy This ruleset enforces a strict user-ownership model. Each user
+ * can only access their own profile information, wounds, wound images, appointments,
+ * and risk assessments.
  *
- * Data Structure:
- * All data is nested under /users/{userId}, creating a clear ownership hierarchy. This enables simple, path-based security rules.
- *  - /users/{userId}: User profile information.
- *  - /users/{userId}/wounds/{woundId}: Wound tracking data.
- *  - /users/{userId}/wounds/{woundId}/images/{imageId}: Wound images.
- *  - /users/{userId}/appointments/{appointmentId}: Healthcare appointments.
- *  - /users/{userId}/wounds/{woundId}/riskAssessments/{riskAssessmentId}: Risk assessments for wounds.
+ * @data_structure All data is nested under /users/{userId}, ensuring a clear
+ * hierarchy of ownership. Wounds, wound images, appointments, and risk assessments
+ * are stored as subcollections under the user's document.
  *
- * Key Security Decisions:
- * - Users can only access data under their own userId.
- * - Listing operations are restricted to the owner of the user subcollection.
- * - No data is publicly accessible.
+ * @key_security_decisions
+ *   - Listing other users' data is disallowed.
+ *   - All write operations require the user to be the owner of the data.
+ *   - No complex data validation is performed in this prototyping phase, focusing on
+ *     authorization.
  *
- * Denormalization for Authorization:
- *  - Not required. The path-based structure inherently provides the necessary ownership context.
+ * @denormalization_for_authorization Not applicable. Path-based authorization is sufficient.
+ * @structural_segregation Not applicable. All data is private and user-specific.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profile information.
+     * @description Secure access to user profile information.
      * @path /users/{userId}
-     * @allow (create) Allow a user to create their own profile.
-     * @allow (get, list, update, delete) Allow the owner to read, update, and delete their profile.
-     * @deny (create) Deny creation if the user ID in the data doesn't match the authenticated user's ID.
-     * @deny (get, list, update, delete) Deny access to other users' profiles.
-     * @principle Enforces document ownership.
+     * @allow (create) Allow a user to create their own profile if the userId matches their auth UID.
+     * @allow (get, update, delete) Allow a user to read, update, or delete their own profile.
+     * @deny (create) Deny creating a profile with a userId that doesn't match the auth UID.
+     * @deny (get, update, delete) Deny access to other users' profiles.
+     * @principle Enforces document ownership for all operations on user profiles.
      */
     match /users/{userId} {
       function isSignedIn() {
@@ -42,21 +40,28 @@ service cloud.firestore {
         return request.auth.uid == userId;
       }
 
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if false; // No listing of all users
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isOwner(userId);
-      allow delete: if isSignedIn() && isOwner(userId);
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if false; // Listing all users is not permitted
+
+      // Self-creation: Only allow creating if the authenticated user's ID matches the document ID
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
+
+      // On Update: Enforce that the ownership field is immutable. This prevents the ownership link from ever being changed.
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to wound data for a specific user.
+     * @description Secure access to wound information for a specific user.
      * @path /users/{userId}/wounds/{woundId}
-     * @allow (create) Allow a user to create a wound entry under their profile.
-     * @allow (get, list, update, delete) Allow the owner to read, update, and delete their wound entries.
-     * @deny (create) Deny creation if the user ID in the path doesn't match the authenticated user's ID.
-     * @deny (get, list, update, delete) Deny access to other users' wound data.
-     * @principle Enforces document ownership within a user's data tree.
+     * @allow (create, get, list, update, delete) Allow a user to manage their own wound data.
+     * @deny (create, get, list, update, delete) Deny access to other users' wound data.
+     * @principle Enforces document ownership for all operations on wound data.
      */
     match /users/{userId}/wounds/{woundId} {
       function isSignedIn() {
@@ -67,21 +72,26 @@ service cloud.firestore {
         return request.auth.uid == userId;
       }
 
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isOwner(userId);
-      allow delete: if isSignedIn() && isOwner(userId);
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to wound image data for a specific user's wound.
+     * @description Secure access to wound images associated with a specific wound for a user.
      * @path /users/{userId}/wounds/{woundId}/images/{imageId}
-     * @allow (create) Allow a user to create a wound image entry under their wound.
-     * @allow (get, list, update, delete) Allow the owner to read, update, and delete their wound image entries.
-     * @deny (create) Deny creation if the user ID in the path doesn't match the authenticated user's ID.
-     * @deny (get, list, update, delete) Deny access to other users' wound image data.
-     * @principle Enforces document ownership within a user's data tree.
+     * @allow (create, get, list, update, delete) Allow a user to manage their own wound images.
+     * @deny (create, get, list, update, delete) Deny access to other users' wound images.
+     * @principle Enforces document ownership for all operations on wound image data.
      */
     match /users/{userId}/wounds/{woundId}/images/{imageId} {
       function isSignedIn() {
@@ -92,21 +102,26 @@ service cloud.firestore {
         return request.auth.uid == userId;
       }
 
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+
       allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isOwner(userId);
-      allow delete: if isSignedIn() && isOwner(userId);
+
+      allow update: if isExistingOwner(userId);
+
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to appointment data for a specific user.
+     * @description Secure access to appointment information for a specific user.
      * @path /users/{userId}/appointments/{appointmentId}
-     * @allow (create) Allow a user to create an appointment entry under their profile.
-     * @allow (get, list, update, delete) Allow the owner to read, update, and delete their appointment entries.
-     * @deny (create) Deny creation if the user ID in the path doesn't match the authenticated user's ID.
-     * @deny (get, list, update, delete) Deny access to other users' appointment data.
-     * @principle Enforces document ownership within a user's data tree.
+     * @allow (create, get, list, update, delete) Allow a user to manage their own appointment data.
+     * @deny (create, get, list, update, delete) Deny access to other users' appointment data.
+     * @principle Enforces document ownership for all operations on appointment data.
      */
     match /users/{userId}/appointments/{appointmentId} {
       function isSignedIn() {
@@ -117,21 +132,26 @@ service cloud.firestore {
         return request.auth.uid == userId;
       }
 
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isOwner(userId);
-      allow delete: if isSignedIn() && isOwner(userId);
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to risk assessment data for a specific user's wound.
+     * @description Secure access to risk assessments for a specific wound, associated with a user.
      * @path /users/{userId}/wounds/{woundId}/riskAssessments/{riskAssessmentId}
-     * @allow (create) Allow a user to create a risk assessment entry under their wound.
-     * @allow (get, list, update, delete) Allow the owner to read, update, and delete their risk assessment entries.
-     * @deny (create) Deny creation if the user ID in the path doesn't match the authenticated user's ID.
-     * @deny (get, list, update, delete) Deny access to other users' risk assessment data.
-     * @principle Enforces document ownership within a user's data tree.
+     * @allow (create, get, list, update, delete) Allow a user to manage their own risk assessment data.
+     * @deny (create, get, list, update, delete) Deny access to other users' risk assessment data.
+     * @principle Enforces document ownership for all operations on risk assessment data.
      */
     match /users/{userId}/wounds/{woundId}/riskAssessments/{riskAssessmentId} {
       function isSignedIn() {
@@ -142,11 +162,18 @@ service cloud.firestore {
         return request.auth.uid == userId;
       }
 
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+
       allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isOwner(userId);
-      allow delete: if isSignedIn() && isOwner(userId);
+
+      allow update: if isExistingOwner(userId);
+
+      allow delete: if isExistingOwner(userId);
     }
   }
 }
