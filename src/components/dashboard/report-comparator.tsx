@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader2, Sparkles, AlertCircle, TrendingUp, TrendingDown, Minus, PencilLine, GitCompareArrows, FileImage, ClipboardCheck, ImageOff, FileDown, BarChart3, Clock, Calendar } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { db } from "@/firebase/client-app";
+import { useFirebase } from "@/firebase";
 import { collection, query, getDocs, orderBy, Timestamp, addDoc, serverTimestamp, getDoc, doc } from "firebase/firestore";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -62,13 +62,14 @@ export function ReportComparator() {
   const [progressMetrics, setProgressMetrics] = useState<ProgressMetrics | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { firestore } = useFirebase();
   const { t } = useTranslation();
 
   useEffect(() => {
     const fetchReports = async () => {
-      if (!user) return;
+      if (!user || !firestore) return;
       try {
-        const q = query(collection(db, "users", user.uid, "reports"), orderBy("createdAt", "desc"));
+        const q = query(collection(firestore, "users", user.uid, "reports"), orderBy("createdAt", "desc"));
         const querySnapshot = await getDocs(q);
         const fetchedReports = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredReport));
         setReports(fetchedReports);
@@ -80,7 +81,7 @@ export function ReportComparator() {
     if (user) {
       fetchReports();
     }
-  }, [user, toast, t]);
+  }, [user, firestore, toast, t]);
   
   const calculateProgressMetrics = (comparison: CompareWoundReportsOutput): ProgressMetrics => {
     const delta = comparison.relatorio_comparativo.analise_quantitativa_progressao;
@@ -151,8 +152,8 @@ export function ReportComparator() {
         const metrics = calculateProgressMetrics(result);
         setProgressMetrics(metrics);
 
-        if (user) {
-          await addDoc(collection(db, "users", user.uid, "comparisons"), {
+        if (user && firestore) {
+          await addDoc(collection(firestore, "users", user.uid, "comparisons"), {
             ...result,
             report1Id: selectedReport1Id,
             report2Id: selectedReport2Id,
@@ -174,11 +175,11 @@ export function ReportComparator() {
   const handleSavePdf = async () => {
     const report1 = reports.find(r => r.id === selectedReport1Id);
     const report2 = reports.find(r => r.id === selectedReport2Id);
-    if (!comparisonResult || !report1 || !report2 || !user) return;
+    if (!comparisonResult || !report1 || !report2 || !user || !firestore) return;
     setPdfLoading(true);
 
     try {
-        const anamnesisSnap1 = await getDoc(doc(db, "users", report1.professionalId, "anamnesis", report1.anamnesisId));
+        const anamnesisSnap1 = await getDoc(doc(firestore, "users", report1.professionalId, "anamnesis", report1.anamnesisId));
         if (!anamnesisSnap1.exists()) {
             toast({ title: "Erro", description: "Ficha de anamnese não encontrada para o relatório 1.", variant: "destructive" });
             setPdfLoading(false);

@@ -49,7 +49,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { db } from "@/firebase/client-app";
+import { useFirebase } from "@/firebase";
 import { collection, addDoc, getDoc, doc, updateDoc, query, where, getDocs, limit } from "firebase/firestore";
 import { v4 as uuidv4 } from 'uuid';
 
@@ -57,6 +57,7 @@ export function AnamnesisForm() {
   const { toast } = useToast();
   const router = useRouter();
   const { user } = useAuth();
+  const { firestore } = useFirebase();
   const searchParams = useSearchParams();
   const [isEditMode, setIsEditMode] = useState(false);
   const [recordId, setRecordId] = useState<string | null>(null);
@@ -199,12 +200,12 @@ export function AnamnesisForm() {
 
   useEffect(() => {
     const editId = searchParams.get('edit');
-    if (editId && user) {
+    if (editId && user && firestore) {
       setIsEditMode(true);
       setRecordId(editId);
       const fetchRecord = async () => {
         try {
-          const docRef = doc(db, "users", user.uid, "anamnesis", editId);
+          const docRef = doc(firestore, "users", user.uid, "anamnesis", editId);
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
             form.reset(docSnap.data() as AnamnesisFormValues);
@@ -219,7 +220,7 @@ export function AnamnesisForm() {
       };
       fetchRecord();
     }
-  }, [searchParams, form, router, toast, user]);
+  }, [searchParams, form, router, toast, user, firestore]);
 
   const watch = form.watch();
 
@@ -287,7 +288,7 @@ export function AnamnesisForm() {
   };
 
   async function onSubmit(data: AnamnesisFormValues) {
-    if (!user) {
+    if (!user || !firestore) {
       toast({ title: "Erro", description: "Você precisa estar logado para salvar uma ficha.", variant: "destructive" });
       return;
     }
@@ -303,7 +304,7 @@ export function AnamnesisForm() {
     }
 
     try {
-        const usersRef = collection(db, "users");
+        const usersRef = collection(firestore, "users");
         // Create a query to find a user with a matching name or email, who also has the 'patient' role.
         const q = query(usersRef, where("role", "==", "patient"), where("name", "==", data.nome_cliente), limit(1));
         const querySnapshot = await getDocs(q);
@@ -332,7 +333,7 @@ export function AnamnesisForm() {
     try {
       if (isEditMode && recordId) {
         // Update existing record in Firestore
-        const docRef = doc(db, "users", user.uid, "anamnesis", recordId);
+        const docRef = doc(firestore, "users", user.uid, "anamnesis", recordId);
         await updateDoc(docRef, sanitizedData);
         toast({
           title: "Formulário Atualizado",
@@ -341,7 +342,7 @@ export function AnamnesisForm() {
         router.push("/dashboard/anamnesis-records");
       } else {
         // Create new record in Firestore
-        await addDoc(collection(db, "users", user.uid, "anamnesis"), sanitizedData);
+        await addDoc(collection(firestore, "users", user.uid, "anamnesis"), sanitizedData);
         toast({
           title: "Formulário Salvo",
           description: "A ficha de anamnese foi salva com sucesso no Firestore.",

@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { db } from "@/firebase/client-app";
+import { useFirebase } from "@/firebase";
 import { collection, query, getDocs, orderBy, limit, doc, deleteDoc } from "firebase/firestore";
 import { ActivitySummaryChart } from "@/components/dashboard/activity-summary-chart";
 import { useTranslation } from "@/contexts/app-provider";
@@ -48,6 +48,7 @@ type StoredAnamnesis = AnamnesisFormValues & { id: string };
 
 export function ProfessionalDashboard() {
   const { user } = useAuth();
+  const { firestore } = useFirebase();
   const { t } = useTranslation();
   const router = useRouter();
   const { toast } = useToast();
@@ -67,14 +68,14 @@ export function ProfessionalDashboard() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!user) {
+      if (!user || !firestore) {
         setLoading(false);
         return;
       }
       try {
         // Fetch recent records
         const recentQuery = query(
-          collection(db, "users", user.uid, "anamnesis"),
+          collection(firestore, "users", user.uid, "anamnesis"),
           orderBy("data_consulta", "desc"),
           limit(5)
         );
@@ -84,9 +85,9 @@ export function ProfessionalDashboard() {
 
         // Fetch activity counts
         const [anamnesisSnapshot, reportsSnapshot, comparisonsSnapshot] = await Promise.all([
-          getDocs(collection(db, "users", user.uid, "anamnesis")),
-          getDocs(collection(db, "users", user.uid, "reports")),
-          getDocs(collection(db, "users", user.uid, "comparisons")),
+          getDocs(collection(firestore, "users", user.uid, "anamnesis")),
+          getDocs(collection(firestore, "users", user.uid, "reports")),
+          getDocs(collection(firestore, "users", user.uid, "comparisons")),
         ]);
 
         const anamnesisCount = anamnesisSnapshot.size;
@@ -132,12 +133,12 @@ export function ProfessionalDashboard() {
     if (user) {
       fetchData();
     }
-  }, [user, toast, t]);
+  }, [user, firestore, toast, t]);
 
   const handleDelete = async () => {
-    if (!recordToDelete || !user) return;
+    if (!recordToDelete || !user || !firestore) return;
     try {
-      await deleteDoc(doc(db, "users", user.uid, "anamnesis", recordToDelete));
+      await deleteDoc(doc(firestore, "users", user.uid, "anamnesis", recordToDelete));
       setRecentAnamneses(recentAnamneses.filter(record => record.id !== recordToDelete));
       toast({
         title: t.deleteRecordTitle,
