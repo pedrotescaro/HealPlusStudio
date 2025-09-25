@@ -9,7 +9,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter
+  DialogFooter,
+  DialogTrigger
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 
