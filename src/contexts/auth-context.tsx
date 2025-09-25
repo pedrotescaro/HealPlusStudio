@@ -68,7 +68,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const refreshUser = async () => {
-    if (auth.currentUser) {
+    if (auth?.currentUser) {
       await auth.currentUser.reload();
       const freshUser = auth.currentUser;
       await fetchUserRole(freshUser);
@@ -76,14 +76,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    setLoading(isUserLoading);
-    if (!isUserLoading && auth) {
-      const unsubscribe = onAuthStateChanged(auth, firebaseUser =>
-        fetchUserRole(firebaseUser)
-      );
-      return () => unsubscribe();
-    } else if (!auth) {
-      setLoading(false);
+    if (isUserLoading) {
+        setLoading(true);
+        return;
+    }
+    if (auth) {
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            await fetchUserRole(firebaseUser);
+            setLoading(false);
+        });
+        return () => unsubscribe();
+    } else {
+        setUser(null);
+        setLoading(false);
     }
   }, [isUserLoading, auth, firestore]);
 
