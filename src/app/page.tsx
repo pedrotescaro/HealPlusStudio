@@ -36,10 +36,6 @@ import Link from "next/link";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { motion } from "framer-motion";
 
-
-const MotionButton = motion(Button);
-const MotionLink = motion(Link);
-
 export default function Home() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -204,31 +200,37 @@ export default function Home() {
             <motion.div
               variants={itemVariants}
               className="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 justify-center pt-4 sm:pt-6 px-3 sm:px-4">
-              <MotionButton
-                size="lg"
-                asChild
-                className="h-12 sm:h-14 md:h-16 px-6 sm:px-8 md:px-10 text-base sm:text-lg md:text-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-xl hover:shadow-2xl transition-all duration-500"
+              <motion.div
                 whileHover={{ scale: 1.05, y: -4 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <Link href="/signup">
-                  <span className="hidden sm:inline">Começar Gratuitamente</span>
-                  <span className="sm:hidden">Começar Grátis</span>
-                  <motion.div variants={pulseVariants} animate="pulsing">
-                    <ArrowRight className="ml-2 h-5 w-5 sm:h-6 sm:w-6" />
-                  </motion.div>
-                </Link>
-              </MotionButton>
-              <MotionButton
-                size="lg"
-                variant="ghost"
-                asChild
-                className="h-12 sm:h-14 md:h-16 px-6 sm:px-8 md:px-10 text-base sm:text-lg md:text-xl text-primary hover:bg-primary/10 transition-all duration-300"
+                <Button
+                  size="lg"
+                  asChild
+                  className="h-12 sm:h-14 md:h-16 px-6 sm:px-8 md:px-10 text-base sm:text-lg md:text-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-xl hover:shadow-2xl transition-all duration-500"
+                >
+                  <Link href="/signup">
+                    <span className="hidden sm:inline">Começar Gratuitamente</span>
+                    <span className="sm:hidden">Começar Grátis</span>
+                    <motion.div variants={pulseVariants} animate="pulsing">
+                      <ArrowRight className="ml-2 h-5 w-5 sm:h-6 sm:w-6" />
+                    </motion.div>
+                  </Link>
+                </Button>
+              </motion.div>
+              <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <Link href="/login">Já tenho conta</Link>
-              </MotionButton>
+                <Button
+                  size="lg"
+                  variant="ghost"
+                  asChild
+                  className="h-12 sm:h-14 md:h-16 px-6 sm:px-8 md:px-10 text-base sm:text-lg md:text-xl text-primary hover:bg-primary/10 transition-all duration-300"
+                >
+                  <Link href="/login">Já tenho conta</Link>
+                </Button>
+              </motion.div>
             </motion.div>
             
             {/* Stats */}
@@ -504,15 +506,19 @@ export default function Home() {
                           Sistema desenvolvido para auxiliar profissionais de saúde na avaliação e documentação de feridas com IA.
                       </p>
                       <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center pt-4 sm:pt-6">
-                          <MotionButton size="lg" asChild className="h-12 sm:h-14 md:h-16 px-6 sm:px-8 md:px-10 text-base sm:text-lg md:text-xl bg-white text-primary hover:bg-blue-100 shadow-xl hover:shadow-2xl" whileHover={{ scale: 1.05, y: -4 }} whileTap={{ scale: 0.95 }}>
-                              <Link href="/signup">
-                                  Começar Agora - É Grátis
-                                  <ArrowRight className="ml-2 h-5 w-5 sm:h-6 sm:w-6" />
-                              </Link>
-                          </MotionButton>
-                          <MotionButton size="lg" variant="ghost" asChild className="h-12 sm:h-14 md:h-16 px-6 sm:px-8 md:px-10 text-base sm:text-lg md:text-xl text-white hover:bg-white/10 hover:text-white" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                              <Link href="/login">Já tenho conta</Link>
-                          </MotionButton>
+                          <motion.div whileHover={{ scale: 1.05, y: -4 }} whileTap={{ scale: 0.95 }}>
+                            <Button size="lg" asChild className="h-12 sm:h-14 md:h-16 px-6 sm:px-8 md:px-10 text-base sm:text-lg md:text-xl bg-white text-primary hover:bg-blue-100 shadow-xl hover:shadow-2xl">
+                                <Link href="/signup">
+                                    Começar Agora - É Grátis
+                                    <ArrowRight className="ml-2 h-5 w-5 sm:h-6 sm:w-6" />
+                                </Link>
+                            </Button>
+                          </motion.div>
+                          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                            <Button size="lg" variant="ghost" asChild className="h-12 sm:h-14 md:h-16 px-6 sm:px-8 md:px-10 text-base sm:text-lg md:text-xl text-white hover:bg-white/10 hover:text-white">
+                                <Link href="/login">Já tenho conta</Link>
+                            </Button>
+                          </motion.div>
                       </div>
                       <div className="flex flex-wrap items-center justify-center gap-x-6 sm:gap-x-8 gap-y-3 pt-6 sm:pt-8 text-sm text-blue-100">
                           <div className="flex items-center gap-2 cta-feature-badge px-3 py-1 rounded-full border-blue-300/30 bg-blue-400/10">
@@ -534,7 +540,7 @@ export default function Home() {
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" className="py-20 sm:py-32 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-muted/10 via-background to-muted/20 relative overflow-hidden">
+      <section id="faq" className="py-20 sm:py-32 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-background via-muted/10 to-background relative overflow-hidden">
         {/* Background decoration */}
         <div className="absolute inset-0 -z-10">
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/5 via-transparent to-primary/10"></div>
@@ -555,7 +561,7 @@ export default function Home() {
             </p>
           </div>
           
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-4xl mx-auto p-4 sm:p-8 rounded-2xl bg-card/50 border border-border/50 backdrop-blur-lg shadow-2xl">
             <FAQAccordion items={[
               {
                 question: "Como o Heal+ funciona?",
@@ -611,8 +617,8 @@ export default function Home() {
             <div className="space-y-4 sm:space-y-6">
               <h3 className="text-lg sm:text-xl font-bold text-primary">Navegação</h3>
               <ul className="space-y-3">
-                <li><MotionLink href="/" className="text-white hover:text-primary transition-colors text-sm sm:text-base flex items-center gap-2" whileHover={{ x: 4 }}>Home</MotionLink></li>
-                <li><MotionLink href="#faq" className="text-white hover:text-primary transition-colors text-sm sm:text-base flex items-center gap-2" whileHover={{ x: 4 }}>Perguntas Frequentes</MotionLink></li>
+                <li><motion.a href="/" className="text-white hover:text-primary transition-colors text-sm sm:text-base flex items-center gap-2" whileHover={{ x: 4 }}>Home</motion.a></li>
+                <li><motion.a href="#faq" className="text-white hover:text-primary transition-colors text-sm sm:text-base flex items-center gap-2" whileHover={{ x: 4 }}>Perguntas Frequentes</motion.a></li>
               </ul>
             </div>
             
@@ -620,18 +626,18 @@ export default function Home() {
             <div className="space-y-4 sm:space-y-6">
               <h3 className="text-lg sm:text-xl font-bold text-primary">Conecte-se</h3>
               <div className="flex items-center space-x-4 sm:space-x-6">
-                <MotionLink href="#" className="text-white hover:text-primary" aria-label="WhatsApp" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                <motion.a href="#" className="text-white hover:text-primary" aria-label="WhatsApp" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                   <MessageCircle className="w-6 h-6 sm:w-7 sm:h-7" />
-                </MotionLink>
-                <MotionLink href="#" className="text-white hover:text-primary" aria-label="LinkedIn" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                </motion.a>
+                <motion.a href="#" className="text-white hover:text-primary" aria-label="LinkedIn" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                   <Linkedin className="w-6 h-6 sm:w-7 sm:h-7" />
-                </MotionLink>
-                <MotionLink href="https://www.youtube.com/@GrupoHealplus" target="_blank" rel="noopener noreferrer" className="text-white hover:text-primary" aria-label="YouTube" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                </motion.a>
+                <motion.a href="https://www.youtube.com/@GrupoHealplus" target="_blank" rel="noopener noreferrer" className="text-white hover:text-primary" aria-label="YouTube" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                   <Youtube className="w-6 h-6 sm:w-7 sm:h-7" />
-                </MotionLink>
-                <MotionLink href="#" className="text-white hover:text-primary" aria-label="Instagram" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                </motion.a>
+                <motion.a href="#" className="text-white hover:text-primary" aria-label="Instagram" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                   <Instagram className="w-6 h-6 sm:w-7 sm:h-7" />
-                </MotionLink>
+                </motion.a>
               </div>
               <p className="text-sm text-gray-300">Siga-nos para atualizações</p>
             </div>
