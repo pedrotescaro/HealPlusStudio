@@ -6,9 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "@/contexts/app-provider";
 import { useAuth } from "@/hooks/use-auth";
-import { useFirebase, useMemoFirebase } from "@/firebase";
-// useCollection removed - using alternative implementation
-import { collection, query, orderBy } from "firebase/firestore";
+import { useFirebase } from "@/firebase";
+import { collection, query, getDocs, orderBy } from "firebase/firestore";
 import { useState, useEffect } from "react";
 import { 
   FileText, 
@@ -27,6 +26,7 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
 
 interface ReportData {
   id: string;
@@ -43,29 +43,33 @@ export function CompareReportsView() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { firestore } = useFirebase();
+  const { toast } = useToast();
   const [selectedReports, setSelectedReports] = useState<string[]>([]);
   const [comparisonData, setComparisonData] = useState<ReportData[]>([]);
-
-  const reportsCollectionQuery = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return query(collection(firestore, "users", user.uid, "reports"), orderBy("date", "desc"));
-  }, [user, firestore]);
-
   const [reports, setReports] = useState<ReportData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!reportsCollectionQuery) {
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    // Alternative implementation without useCollection
-    // You can implement your own data fetching logic here
-    setReports([]);
-    setIsLoading(false);
-  }, [reportsCollectionQuery]);
+    const fetchReports = async () => {
+      if (!user || !firestore) {
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(true);
+      try {
+        const reportsQuery = query(collection(firestore, "users", user.uid, "reports"), orderBy("date", "desc"));
+        const querySnapshot = await getDocs(reportsQuery);
+        const fetchedReports = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ReportData));
+        setReports(fetchedReports);
+      } catch (e) {
+        console.error("Failed to fetch reports:", e);
+        toast({ title: "Erro", description: "Não foi possível carregar os relatórios.", variant: "destructive" });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchReports();
+  }, [user, firestore, toast]);
 
   const handleReportSelect = (reportId: string) => {
     setSelectedReports(prev => 
