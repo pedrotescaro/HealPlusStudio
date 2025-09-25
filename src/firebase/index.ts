@@ -47,10 +47,29 @@ export function initializeFirebase() {
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
+  let database = null;
+  let analytics = null;
+
+  // Skip Realtime Database initialization to avoid URL parsing errors
+  try {
+    if (firebaseApp.options.databaseURL) {
+      database = getDatabase(firebaseApp);
+    }
+  } catch (error) {
+    console.warn('Realtime Database initialization skipped:', error);
+  }
+
+  // Skip Analytics initialization in server-side rendering
+  try {
+    if (typeof window !== 'undefined' && isSupported()) {
+      analytics = getAnalytics(firebaseApp);
+    }
+  } catch (error) {
+    console.warn('Analytics initialization skipped:', error);
+  }
+
   const auth = getAuth(firebaseApp);
   const firestore = getFirestore(firebaseApp);
-  const database = getDatabase(firebaseApp);
-  const analytics = (typeof window !== 'undefined' && isSupported()) ? getAnalytics(firebaseApp) : null;
 
   console.log('Firebase SDKs initialized:', {
     auth: !!auth,
