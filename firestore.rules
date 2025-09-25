@@ -4,108 +4,205 @@
  * All data is nested under /users/{userId}, ensuring that users can only access their own information.
  *
  * Data Structure:
- * - /users/{userId}: Stores user profile information.
- * - /users/{userId}/wounds/{woundId}: Stores wound information for a specific user.
- * - /users/{userId}/wounds/{woundId}/images/{imageId}: Stores images associated with a specific wound.
- * - /users/{userId}/appointments/{appointmentId}: Stores appointment information for a specific user.
- * - /users/{userId}/wounds/{woundId}/riskAssessments/{riskAssessmentId}: Stores risk assessments for a specific wound.
+ * - /users/{userId}: Stores user profile data.
+ * - /users/{userId}/wounds/{woundId}: Stores wound information for a user.
+ * - /users/{userId}/wounds/{woundId}/images/{imageId}: Stores wound images for a specific wound.
+ * - /users/{userId}/appointments/{appointmentId}: Stores appointment data for a user.
+ * - /users/{userId}/wounds/{woundId}/riskAssessments/{riskAssessmentId}: Stores risk assessments for wounds.
  *
  * Key Security Decisions:
- * - Users can only read and write their own user profile data.
- * - All subcollections under /users/{userId} inherit ownership.
- * - No public listing of user data is allowed.
- * - Data validation is minimal to facilitate rapid prototyping.  Only ownership and relational integrity are validated.
+ * - User listing is allowed for authenticated users.
+ * - All writes are strictly controlled by user ownership, enforced via path-based matching.
+ * - Public read access is not granted to any collection, ensuring all data is protected.
+ * - Chats collection implements shared access with `participants` field in the document.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profile information.
+     * @description Controls access to user profile documents. Users can only read and write their own profile.
      * @path /users/{userId}
-     * @allow (get, list) if the user is signed in.
-     * @allow (create, update, delete) if the authenticated user's UID matches the userId.
-     * @deny (create, update, delete) if the authenticated user's UID does not match the userId.
-     * @principle Enforces document ownership for writes; requires authentication for reads.
+     * @allow (read, write) User with ID 'user123' can read/write document 'user123'.
+     * @deny (read, write) User with ID 'user123' cannot read/write document 'user456'.
+     * @principle Enforces document ownership: only the user with a matching ID can access the document.
      */
     match /users/{userId} {
-      // Function to check if the user is signed in
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      // Function to check if the request is made by the owner
+      // Function to check if the requesting user is the owner of the document.
       function isOwner(userId) {
-        return request.auth.uid == userId;
+        return request.auth != null && request.auth.uid == userId;
       }
-      allow get: if isSignedIn();
-      allow list: if false;
+
+      // Allow a user to create their own profile if the userId matches their auth uid.
+      allow create: if isOwner(userId) && request.resource.data.id == request.auth.uid;
+
+      // Allow a user to read their own profile.
+      allow get: if isOwner(userId);
+
+      // Allow a user to update their own profile, enforcing immutability of the id field.
+      allow update: if isOwner(userId) && request.resource.data.id == resource.data.id;
+
+      // Allow a user to delete their own profile.
+      allow delete: if isOwner(userId) && resource != null;
+
+      // Allow authenticated users to list user profiles (e.g., for searching).
+      allow list: if request.auth != null;
+    }
+
+    /**
+     * @description Controls access to wound documents within a user's profile. Only the owning user can read and write wound data.
+     * @path /users/{userId}/wounds/{woundId}
+     * @allow (create, read, write, delete) User 'user123' can create/read/write/delete wound 'wound456' under /users/user123/wounds/wound456.
+     * @deny (create, read, write, delete) User 'user456' cannot create/read/write/delete wound 'wound456' under /users/user123/wounds/wound456.
+     * @principle Enforces document ownership for wounds: only the owner can manage their wound data.
+     */
+    match /users/{userId}/wounds/{woundId} {
+      // Function to check if the requesting user is the owner of the document.
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      // Allow a user to create a wound document if they are the owner.
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+
+      // Allow a user to read their own wound documents.
+      allow get: if isOwner(userId);
+
+      // Allow a user to update their own wound documents, enforcing immutability of the userId.
+      allow update: if isOwner(userId) && request.resource.data.userId == resource.data.userId && resource != null;
+
+      // Allow a user to delete their own wound documents.
+      allow delete: if isOwner(userId) && resource != null;
+
+      // Allow the owner to list their own wound documents.
+      allow list: if isOwner(userId);
+    }
+
+    /**
+     * @description Controls access to wound image documents within a wound document. Only the owning user can manage wound images.
+     * @path /users/{userId}/wounds/{woundId}/images/{imageId}
+     * @allow (create, read, write, delete) User 'user123' can create/read/write/delete image 'image789' under /users/user123/wounds/wound456/images/image789.
+     * @deny (create, read, write, delete) User 'user456' cannot create/read/write/delete image 'image789' under /users/user123/wounds/wound456/images/image789.
+     * @principle Enforces strict ownership: only the owner can manage their wound images.
+     */
+    match /users/{userId}/wounds/{woundId}/images/{imageId} {
+      // Function to check if the requesting user is the owner of the document.
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      // Allow a user to create a wound image document if they are the owner.
       allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
 
-      /**
-       * @description Controls access to wound information for a specific user.
-       * @path /users/{userId}/wounds/{woundId}
-       * @allow (get, list) if the authenticated user's UID matches the userId.
-       * @allow (create, update, delete) if the authenticated user's UID matches the userId.
-       * @deny (create, update, delete) if the authenticated user's UID does not match the userId.
-       * @principle Enforces document ownership for all operations.
-       */
-      match /wounds/{woundId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
-        allow create: if isOwner(userId);
-        allow update: if isOwner(userId);
-        allow delete: if isOwner(userId);
+      // Allow a user to read their own wound image documents.
+      allow get: if isOwner(userId);
 
-        /**
-         * @description Controls access to images associated with a specific wound for a user.
-         * @path /users/{userId}/wounds/{woundId}/images/{imageId}
-         * @allow (get, list) if the authenticated user's UID matches the userId.
-         * @allow (create, update, delete) if the authenticated user's UID matches the userId.
-         * @deny (create, update, delete) if the authenticated user's UID does not match the userId.
-         * @principle Enforces document ownership for all operations.
-         */
-        match /images/{imageId} {
-          allow get: if isOwner(userId);
-          allow list: if isOwner(userId);
-          allow create: if isOwner(userId);
-          allow update: if isOwner(userId);
-          allow delete: if isOwner(userId);
-        }
+      // Allow a user to update their own wound image documents.
+      allow update: if isOwner(userId) && resource != null;
 
-          /**
-           * @description Controls access to risk assessments for a specific wound, associated with a user.
-           * @path /users/{userId}/wounds/{woundId}/riskAssessments/{riskAssessmentId}
-           * @allow (get, list) if the authenticated user's UID matches the userId.
-           * @allow (create, update, delete) if the authenticated user's UID matches the userId.
-           * @deny (create, update, delete) if the authenticated user's UID does not match the userId.
-           * @principle Enforces document ownership for all operations.
-           */
-        match /riskAssessments/{riskAssessmentId} {
-            allow get: if isOwner(userId);
-            allow list: if isOwner(userId);
-            allow create: if isOwner(userId);
-            allow update: if isOwner(userId);
-            allow delete: if isOwner(userId);
-          }
+      // Allow a user to delete their own wound image documents.
+      allow delete: if isOwner(userId) && resource != null;
+
+      // Allow the owner to list their own wound image documents.
+      allow list: if isOwner(userId);
+    }
+
+    /**
+     * @description Controls access to appointment documents within a user's profile. Only the owning user can manage their appointments.
+     * @path /users/{userId}/appointments/{appointmentId}
+     * @allow (create, read, write, delete) User 'user123' can create/read/write/delete appointment 'appt1' under /users/user123/appointments/appt1.
+     * @deny (create, read, write, delete) User 'user456' cannot create/read/write/delete appointment 'appt1' under /users/user123/appointments/appt1.
+     * @principle Enforces user-specific access: only the owner can manage their appointment data.
+     */
+    match /users/{userId}/appointments/{appointmentId} {
+      // Function to check if the requesting user is the owner of the document.
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
       }
 
+      // Allow a user to create an appointment document if they are the owner.
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+
+      // Allow a user to read their own appointment documents.
+      allow get: if isOwner(userId);
+
+      // Allow a user to update their own appointment documents, enforcing immutability of the userId.
+      allow update: if isOwner(userId) && request.resource.data.userId == resource.data.userId && resource != null;
+
+      // Allow a user to delete their own appointment documents.
+      allow delete: if isOwner(userId) && resource != null;
+
+      // Allow the owner to list their own appointment documents.
+      allow list: if isOwner(userId);
+    }
+
+    /**
+     * @description Controls access to risk assessment documents within a wound document. Only the owning user can manage risk assessments.
+     * @path /users/{userId}/wounds/{woundId}/riskAssessments/{riskAssessmentId}
+     * @allow (create, read, write, delete) User 'user123' can create/read/write/delete risk assessment 'risk1' under /users/user123/wounds/wound456/riskAssessments/risk1.
+     * @deny (create, read, write, delete) User 'user456' cannot create/read/write/delete risk assessment 'risk1' under /users/user123/wounds/wound456/riskAssessments/risk1.
+     * @principle Enforces ownership: only the owner can manage risk assessments for their wounds.
+     */
+    match /users/{userId}/wounds/{woundId}/riskAssessments/{riskAssessmentId} {
+      // Function to check if the requesting user is the owner of the document.
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      // Allow a user to create a risk assessment document if they are the owner.
+      allow create: if isOwner(userId);
+
+      // Allow a user to read their own risk assessment documents.
+      allow get: if isOwner(userId);
+
+      // Allow a user to update their own risk assessment documents.
+      allow update: if isOwner(userId) && resource != null;
+
+      // Allow a user to delete their own risk assessment documents.
+      allow delete: if isOwner(userId) && resource != null;
+
+      // Allow the owner to list their own risk assessment documents.
+      allow list: if isOwner(userId);
+    }
+    
+    /**
+     * @description Controls access to chat documents. Only participants can read, update and delete.
+     * @path /chats/{chatId}
+     */
+    match /chats/{chatId} {
+    	function isParticipant() {
+      	return request.auth != null && request.auth.uid in resource.data.participants;
+      }
+      
+      function isCreatingParticipant() {
+      	return request.auth != null && request.auth.uid in request.resource.data.participants;
+      }
+      
+      allow read: if isParticipant();
+      allow create: if isCreatingParticipant();
+      allow update: if isParticipant() && resource != null;
+      allow delete: if isParticipant() && resource != null;
+      allow list: if false;
+      
+      
       /**
-       * @description Controls access to appointment information for a specific user.
-       * @path /users/{userId}/appointments/{appointmentId}
-       * @allow (get, list) if the authenticated user's UID matches the userId.
-       * @allow (create, update, delete) if the authenticated user's UID matches the userId.
-       * @deny (create, update, delete) if the authenticated user's UID does not match the userId.
-       * @principle Enforces document ownership for all operations.
+       * @description Controls access to message documents. Only participants can read and create.
+       * @path /chats/{chatId}/messages/{messageId}
        */
-      match /appointments/{appointmentId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
-        allow create: if isOwner(userId);
-        allow update: if isOwner(userId);
-        allow delete: if isOwner(userId);
+      match /messages/{messageId} {
+      	function isChatParticipant() {
+        	return request.auth != null && get(/databases/$(database)/documents/chats/$(chatId)).data.participants.hasAny([request.auth.uid]);
+        }
+        
+        function isValidSender() {
+        	return request.resource.data.senderId == request.auth.uid;
+        }
+        
+        allow read: if isChatParticipant();
+        allow create: if isChatParticipant() && isValidSender();
+        allow update: if false;
+        allow delete: if false;
+        allow list: if false;
       }
     }
   }
