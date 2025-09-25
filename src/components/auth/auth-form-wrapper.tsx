@@ -4,7 +4,6 @@ import { ReactNode } from "react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Logo } from "@/components/logo";
-import { SocialLogins } from "./social-logins";
 
 interface AuthFormWrapperProps {
   children: ReactNode;
@@ -36,7 +35,6 @@ export function AuthFormWrapper({
           <Card className="shadow-2xl border-0 bg-card/50 backdrop-blur-sm">
             <CardContent className="p-6 sm:p-8">
               {children}
-              {showSocialLogins && <SocialLogins />}
             </CardContent>
           </Card>
           {title.includes("Bem-vindo") ? (
