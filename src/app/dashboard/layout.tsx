@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AppSidebar from '@/components/dashboard/app-sidebar';
 import MobileNav from '@/components/dashboard/mobile-nav';
 import { useAuth } from '@/hooks/use-auth';
@@ -15,15 +15,15 @@ export default function DashboardLayout({
 }) {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  if (loading) {
-    return <LoadingPage message="Autenticando..." />;
-  }
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace('/login');
+    }
+  }, [loading, user, router]);
 
-  if (!user) {
-    router.replace('/login');
-    return <LoadingPage message="Redirecionando para login..." />;
+  if (loading || !user) {
+    return <LoadingPage message={!user ? "Redirecionando para login..." : "Autenticando..."} />;
   }
 
   return (
