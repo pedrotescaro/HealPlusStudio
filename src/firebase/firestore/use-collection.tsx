@@ -11,6 +11,7 @@ import {
   query,
   collectionGroup,
   QueryConstraint,
+  where,
 } from 'firebase/firestore';
 import { useFirebase } from '@/firebase/provider';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -56,7 +57,7 @@ export function useCollection<T = any>(
     pathOrCollectionGroupId: string | null | undefined,
     options: { isGroup?: boolean; constraints?: QueryConstraint[] } = {}
 ): UseCollectionResult<T> {
-  const { firestore } = useFirebase();
+  const { firestore, user } = useFirebase();
   const { isGroup = false, constraints = [] } = options;
   type ResultItemType = WithId<T>;
   type StateDataType = ResultItemType[] | null;
@@ -67,19 +68,32 @@ export function useCollection<T = any>(
 
   // Memoize the query reference itself.
   const memoizedQuery = useMemo(() => {
-    if (!firestore || !pathOrCollectionGroupId) return null;
+    if (!firestore || !pathOrCollectionGroupId || !user) return null;
 
     try {
+        let finalConstraints = [...constraints];
+        if (isGroup) {
+            // For collection group queries, we MUST filter by the current user's ID
+            // to comply with security rules.
+            if (pathOrCollectionGroupId === 'reports' && user.role === 'patient') {
+              finalConstraints.push(where('patientId', '==', user.uid));
+            } else {
+              finalConstraints.push(where('professionalId', '==', user.uid));
+            }
+        }
+        
         const baseQuery = isGroup
             ? collectionGroup(firestore, pathOrCollectionGroupId)
             : collection(firestore, pathOrCollectionGroupId);
-        return query(baseQuery, ...constraints);
+            
+        return query(baseQuery, ...finalConstraints);
+
     } catch (e) {
       console.error("Failed to create Firestore query:", e);
       return null;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [firestore, pathOrCollectionGroupId, isGroup, JSON.stringify(constraints)]);
+  }, [firestore, pathOrCollectionGroupId, isGroup, JSON.stringify(constraints), user]);
 
 
   useEffect(() => {

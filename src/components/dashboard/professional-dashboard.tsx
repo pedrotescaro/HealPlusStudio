@@ -68,16 +68,18 @@ export function ProfessionalDashboard() {
   });
 
   const { data: allAnamneses, isLoading: anamnesisLoading } = useCollection<StoredAnamnesis>(
-    user ? `users/${user.uid}/anamnesis` : null,
-    { constraints: [orderBy("data_consulta", "desc")] }
+    'anamnesis',
+    { isGroup: true, constraints: [orderBy("data_consulta", "desc")] }
   );
 
   const { data: allReports, isLoading: reportsLoading } = useCollection(
-    user ? `users/${user.uid}/reports` : null
+    'reports',
+    { isGroup: true }
   );
 
   const { data: allComparisons, isLoading: comparisonsLoading } = useCollection(
-    user ? `users/${user.uid}/comparisons` : null
+    'comparisons',
+    { isGroup: true }
   );
 
   const loading = anamnesisLoading || reportsLoading || comparisonsLoading;

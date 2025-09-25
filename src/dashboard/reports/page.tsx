@@ -67,10 +67,13 @@ export default function ReportsPage() {
   const [currentReportForPdf, setCurrentReportForPdf] = useState<StoredReport | null>(null);
 
   const { data: reports, isLoading: loading } = useCollection<StoredReport>(
-    user?.role === 'professional' ? (user ? `users/${user.uid}/reports` : null) : 'reports',
-    user?.role === 'professional' 
-      ? { constraints: [orderBy("createdAt", "desc")] }
-      : { isGroup: true, constraints: [where("patientId", "==", user?.uid || ''), orderBy("createdAt", "desc")] }
+    'reports',
+    { 
+      isGroup: true, 
+      constraints: user?.role === 'patient' 
+        ? [where("patientId", "==", user.uid), orderBy("createdAt", "desc")]
+        : [orderBy("createdAt", "desc")]
+    }
   );
   
   const handleDelete = async () => {
