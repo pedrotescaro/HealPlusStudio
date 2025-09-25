@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Trash2, Eye, Loader2, FileDown } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   DropdownMenu,
@@ -36,15 +36,16 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { useFirebase, useCollection } from "@/firebase";
-import { doc, deleteDoc, Timestamp, getDoc } from "firebase/firestore";
+import { useFirebase } from "@/firebase";
+import { useCollection } from "@/firebase/firestore/use-collection";
+import { collection, query, orderBy, doc, deleteDoc, Timestamp, getDoc, where, collectionGroup } from "firebase/firestore";
 import { useTranslation } from "@/contexts/app-provider";
 import jsPDF from "jspdf";
 import autoTable from 'jspdf-autotable';
 import type { AnamnesisFormValues } from "@/lib/anamnesis-schema";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
-import { orderBy } from "firebase/firestore";
+import type { Query } from "firebase/firestore";
 
 interface StoredReport {
   id: string;
@@ -67,10 +68,16 @@ export default function ReportsPage() {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [currentReportForPdf, setCurrentReportForPdf] = useState<StoredReport | null>(null);
 
-  const { data: reports, isLoading: loading } = useCollection<StoredReport>('reports', {
-    isGroup: true,
-    constraints: [orderBy("createdAt", "desc")]
-  });
+  const reportsQuery = useMemo(() => {
+    if (!user || !firestore) return null;
+    if (user.role === 'professional') {
+      return query(collection(firestore, "users", user.uid, "reports"), orderBy("createdAt", "desc"));
+    } else {
+      return query(collectionGroup(firestore, "reports"), where("patientId", "==", user.uid));
+    }
+  }, [user, firestore]);
+
+  const { data: reports, isLoading: loading } = useCollection<StoredReport>(reportsQuery);
   
   const handleDelete = async () => {
     if (!reportToDelete || !user || user.role !== 'professional' || !firestore) return;

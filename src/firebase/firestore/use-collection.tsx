@@ -36,53 +36,28 @@ interface UseCollectionOptions {
 
 /**
  * React hook to subscribe to a Firestore collection or collection group in real-time.
- * It memoizes the query internally.
  *
  * @template T Optional type for document data. Defaults to any.
- * @param {string | null | undefined} path - The path to the collection or the ID for a collection group.
- * @param {UseCollectionOptions} options - Options for the query, such as constraints and whether it's a group query.
+ * @param {Query | string | null | undefined} queryOrPath - A Firestore Query object or a path string.
+ * @param {UseCollectionOptions} options - Options for the query, such as constraints.
  * @returns {UseCollectionResult<T>} Object with data, isLoading, error.
  */
 export function useCollection<T = any>(
-  path: string | null | undefined,
+  queryOrPath: Query | string | null | undefined,
   options: UseCollectionOptions = {}
 ): UseCollectionResult<T> {
-  const { firestore, user } = useFirebase();
-  const { constraints = [], isGroup = false } = options;
+  const { firestore } = useFirebase();
+  const { constraints = [] } = options;
   type StateDataType = WithId<T>[] | null;
 
   const [data, setData] = useState<StateDataType>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
-  // Memoize the query object.
-  // The query is re-created only if firestore, path, or constraints change.
-  const memoizedQuery = useMemo(() => {
-    if (!firestore || !path || !user) return null;
-
-    let q: Query;
-    const allConstraints = [...constraints];
-    
-    if (isGroup) {
-      // For collection group queries, filter by the current user's ID to ensure security rules pass.
-      const userFilter = user.role === 'professional' 
-        ? where('professionalId', '==', user.uid)
-        : where('patientId', '==', user.uid);
-      allConstraints.push(userFilter);
-      q = query(collectionGroup(firestore, path), ...allConstraints);
-    } else {
-      q = query(collection(firestore, path), ...allConstraints);
-    }
-    return q;
-  }, [firestore, path, user, JSON.stringify(constraints), isGroup]);
-
-
   useEffect(() => {
-    if (!memoizedQuery) {
+    if (!firestore || !queryOrPath) {
       setData(null);
-      if (!path || !firestore) {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
       setError(null);
       return;
     }
@@ -90,8 +65,13 @@ export function useCollection<T = any>(
     setIsLoading(true);
     setError(null);
     
+    // Determine if the input is a Query object or a path string
+    const finalQuery = typeof queryOrPath === 'string'
+      ? query(collection(firestore, queryOrPath), ...constraints)
+      : queryOrPath;
+
     const unsubscribe = onSnapshot(
-      memoizedQuery,
+      finalQuery,
       (querySnapshot) => {
         const result: WithId<T>[] = [];
         querySnapshot.forEach((doc) => {
@@ -106,11 +86,16 @@ export function useCollection<T = any>(
         
         // This is a simplified path for the error message.
         // A more robust solution might try to reconstruct the full path.
-        const errorPath = isGroup ? `subcollection: ${path}` : path || 'unknown path';
-
+        let path: string = 'unknown path';
+        if (typeof queryOrPath === 'string') {
+          path = queryOrPath;
+        } else if ((queryOrPath as any)._query) {
+           path = (queryOrPath as any)._query.path?.canonicalString() || `collectionGroup: ${(queryOrPath as any)._query.collectionGroup}`;
+        }
+        
         const contextualError = new FirestorePermissionError({
-          operation: 'list',
-          path: errorPath,
+          operation: 'list', // This operation name might be misleading but is kept for consistency.
+          path: path,
         });
 
         setError(contextualError);
@@ -123,7 +108,7 @@ export function useCollection<T = any>(
     );
 
     return () => unsubscribe();
-  }, [memoizedQuery, path, firestore, isGroup]);
+  }, [firestore, queryOrPath, JSON.stringify(constraints)]); // Use stringified constraints for dependency array
 
   return { data, isLoading, error };
 }
