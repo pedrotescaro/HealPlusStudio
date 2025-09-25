@@ -15,7 +15,8 @@ import {
   Camera,
   BarChart3,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  MessageSquare,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -61,13 +62,11 @@ export default function AppSidebar({ className, onLinkClick }: AppSidebarProps) 
   const professionalNavItems: NavItem[] = [
     { href: "/dashboard", icon: LayoutDashboard, label: t.dashboard, isActive: true },
     { href: "/dashboard/anamnesis", icon: ClipboardList, label: t.newAnamnesis, badge: "Novo" },
-    { href: "/dashboard/anamnesis-records", icon: Users, label: t.myPatients },
     { href: "/dashboard/agenda", icon: Calendar, label: t.agenda },
-    { href: "/dashboard/wound-capture", icon: Camera, label: "Captura de Feridas", badge: "AI" },
-    { href: "/dashboard/report", icon: FileText, label: t.generateReport },
     { href: "/dashboard/reports", icon: Archive, label: t.myReports },
     { href: "/dashboard/compare-reports", icon: CopyCheck, label: t.compareReports, badge: "Pro" },
     { href: "/dashboard/analytics", icon: BarChart3, label: "Analytics" },
+    { href: "/dashboard/chat", icon: MessageSquare, label: "Chat", badge: "AI" },
     { href: "/dashboard/profile", icon: User, label: t.profile },
   ];
 
