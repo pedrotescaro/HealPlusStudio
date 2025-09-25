@@ -1,153 +1,110 @@
 /**
- * @file HealPlus Firestore Security Rules
- * @corePhilosophy This ruleset enforces a strict user-ownership model, ensuring that users can only access their own data. All data is nested under /users/{userId}, providing a clear and secure path-based ownership structure.
- * @dataStructure All data is nested under `/users/{userId}`, including user profiles, wounds, wound images, appointments, and risk assessments. This hierarchical structure simplifies security rules and enforces clear ownership.
- * @keySecurityDecisions Listing of user profiles is disallowed. All read and write operations are scoped to the authenticated user's ID. No public read access is granted.
- * @denormalizationForAuthorization No denormalization is used, as path-based ownership provides sufficient security and simplifies rules.
- * @structuralSegregation All user data is stored under the user's ID, ensuring complete segregation and preventing unauthorized access.
+ * @file Firestore Security Rules for HealPlus Application
+ * @core_philosophy This ruleset enforces a strict user-ownership model, where users can only access their own data.
+ * @data_structure All data is nested under /users/{userId}, creating a clear hierarchy for data ownership.
+ * @key_security_decisions User listing is disallowed for privacy.  Write access is strictly controlled by the `isOwner()` function, which verifies that the authenticated user ID matches the userId in the path.
+ *
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Protects user profile data, ensuring only the owner can read and write.
+     * @description Checks if the request is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the authenticated user ID matches the provided user ID.
+     * @param userId The user ID to compare against the authenticated user ID.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the authenticated user owns the existing document.
+     * @param userId The user ID to compare against the authenticated user ID.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Enforces ownership on the /users/{userId} document.
      * @path /users/{userId}
-     * @allow (create) User with ID "user123" can create their profile.
-     * @allow (get, update, delete) User with ID "user123" can read, update, or delete their profile.
-     * @deny (create, get, update, delete) User with ID "user456" cannot access user "user123"'s profile.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) User with ID 'user123' can create their own profile.
+     * @deny (create) User with ID 'user123' cannot create profile for 'otherUser'.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isExistingOwner(userId);
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow get: if isOwner(userId);
+      allow list: if false; // Disallow listing all users for privacy.
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Manages wound data, restricting access to the owner.
+     * @description Enforces ownership on the /users/{userId}/wounds/{woundId} document.
      * @path /users/{userId}/wounds/{woundId}
-     * @allow (create) User "user123" can create a wound under their profile.
-     * @allow (get, update, delete) User "user123" can read, update, or delete their wound.
-     * @deny (create, get, update, delete) User "user456" cannot access wounds under user "user123"'s profile.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) User with ID 'user123' can create a wound under their profile.
+     * @deny (create) User with ID 'user123' cannot create a wound under 'otherUser's profile.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/wounds/{woundId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isExistingOwner(userId);
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to wound images, ensuring owner-only access.
+     * @description Enforces ownership on the /users/{userId}/wounds/{woundId}/images/{imageId} document.
      * @path /users/{userId}/wounds/{woundId}/images/{imageId}
-     * @allow (create) User "user123" can create a wound image under their wound.
-     * @allow (get, update, delete) User "user123" can read, update, or delete their wound image.
-     * @deny (create, get, update, delete) User "user456" cannot access wound images under user "user123"'s profile.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) User with ID 'user123' can create a wound image under their wound.
+     * @deny (create) User with ID 'user123' cannot create a wound image under someone else's wound.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/wounds/{woundId}/images/{imageId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isExistingOwner(userId);
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Secures appointment data, allowing only the owner to manage it.
+     * @description Enforces ownership on the /users/{userId}/appointments/{appointmentId} document.
      * @path /users/{userId}/appointments/{appointmentId}
-     * @allow (create) User "user123" can create an appointment under their profile.
-     * @allow (get, update, delete) User "user123" can read, update, or delete their appointment.
-     * @deny (create, get, update, delete) User "user456" cannot access appointments under user "user123"'s profile.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) User with ID 'user123' can create an appointment under their profile.
+     * @deny (create) User with ID 'user123' cannot create an appointment under 'otherUser's profile.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/appointments/{appointmentId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isExistingOwner(userId);
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Protects risk assessment data, ensuring owner-only access.
+     * @description Enforces ownership on the /users/{userId}/wounds/{woundId}/riskAssessments/{riskAssessmentId} document.
      * @path /users/{userId}/wounds/{woundId}/riskAssessments/{riskAssessmentId}
-     * @allow (create) User "user123" can create a risk assessment under their wound.
-     * @allow (get, update, delete) User "user123" can read, update, or delete their risk assessment.
-     * @deny (create, get, update, delete) User "user456" cannot access risk assessments under user "user123"'s profile.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) User with ID 'user123' can create a risk assessment under their wound.
+     * @deny (create) User with ID 'user123' cannot create a risk assessment under someone else's wound.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/wounds/{woundId}/riskAssessments/{riskAssessmentId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isExistingOwner(userId);
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
   }
 }
