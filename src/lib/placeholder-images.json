@@ -1,3 +1,70 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "avatar1",
+      "description": "Avatar for John Doe",
+      "imageUrl": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxtYW4lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NTg3MDg5NTd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man portrait"
+    },
+    {
+      "id": "avatar2",
+      "description": "Avatar for Jane Smith",
+      "imageUrl": "https://images.unsplash.com/photo-1557053908-4793c484d06f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHx3b21hbiUyMHBvcnRyYWl0fGVufDB8fHx8MTc1ODc1MTMyM3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman portrait"
+    },
+    {
+      "id": "avatar3",
+      "description": "Avatar for Mike Johnson",
+      "imageUrl": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NTg3ODg5NzR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "avatar4",
+      "description": "Avatar for Emily Davis",
+      "imageUrl": "https://images.unsplash.com/photo-1525134479668-1bee5c7c6845?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHx3b21hbiUyMHNtaWxlfGVufDB8fHx8MTc1ODcwMDkwNXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman smile"
+    },
+    {
+      "id": "doctor_avatar",
+      "description": "Avatar for Dr. Smith",
+      "imageUrl": "https://images.unsplash.com/photo-1651008376811-b90baee60c1f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxkb2N0b3IlMjBwb3J0cmFpdHxlbnwwfHx8fDE3NTg4MDMwMTN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "doctor portrait"
+    },
+    {
+      "id": "wound1_1",
+      "description": "Wound of John Doe on 2024-05-01",
+      "imageUrl": "https://images.unsplash.com/photo-1539327381140-bc020facf1e2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxza2luJTIwd291bmR8ZW58MHx8fHwxNzU4ODA4Njc3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "skin wound"
+    },
+    {
+      "id": "wound1_2",
+      "description": "Wound of John Doe on 2024-05-15",
+      "imageUrl": "https://images.unsplash.com/photo-1606501176727-e24f1e183fd6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxoZWFsaW5nJTIwc2tpbnxlbnwwfHx8fDE3NTg4MDg2Nzl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "healing skin"
+    },
+    {
+      "id": "wound2_1",
+      "description": "Wound of Jane Smith on 2024-06-10",
+      "imageUrl": "https://images.unsplash.com/photo-1656445067889-99ba76d754d6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxsZWclMjBpbmp1cnl8ZW58MHx8fHwxNzU4ODA4Njc3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "leg injury"
+    },
+    {
+      "id": "wound3_1",
+      "description": "Wound of Mike Johnson on 2024-07-01",
+      "imageUrl": "https://images.unsplash.com/photo-1618349532557-a1852ae73398?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxhcm0lMjBhYnJhc2lvbnxlbnwwfHx8fDE3NTg4MDg2Nzh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "arm abrasion"
+    },
+    {
+      "id": "wound3_2",
+      "description": "Wound of Mike Johnson on 2024-07-10",
+      "imageUrl": "https://images.unsplash.com/photo-1593768106081-b1c15c92ea9e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxoZWFsaW5nJTIwd291bmR8ZW58MHx8fHwxNzU4ODA4Njc3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "healing wound"
+    },
+    {
+      "id": "wound4_1",
+      "description": "Wound of Emily Davis on 2024-07-05",
+      "imageUrl": "https://images.unsplash.com/photo-1741434397288-7319dd2acd5b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxmb290JTIwdWxjZXJ8ZW58MHx8fHwxNzU4ODA4Njc3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "foot ulcer"
+    }
+  ]
 }
