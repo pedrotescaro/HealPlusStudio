@@ -5,8 +5,7 @@ import Image from "next/image";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Trash2, Eye, Loader2, FileDown } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   DropdownMenu,
@@ -37,8 +36,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { useFirebase } from "@/firebase";
-import { collection, query, getDocs, orderBy, doc, deleteDoc, Timestamp, getDoc, where, collectionGroup } from "firebase/firestore";
+import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, orderBy, doc, deleteDoc, Timestamp, getDoc, where, collectionGroup } from "firebase/firestore";
 import { useTranslation } from "@/contexts/app-provider";
 import jsPDF from "jspdf";
 import autoTable from 'jspdf-autotable';
@@ -63,49 +62,22 @@ export default function ReportsPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { firestore } = useFirebase();
-  const [reports, setReports] = useState<StoredReport[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [pdfLoading, setPdfLoading] = useState(false);
   const [reportToDelete, setReportToDelete] = useState<string | null>(null);
   const [reportToView, setReportToView] = useState<StoredReport | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [currentReportForPdf, setCurrentReportForPdf] = useState<StoredReport | null>(null);
 
-  useEffect(() => {
-    const fetchReports = async () => {
-      if (!user || !firestore) {
-        setLoading(false);
-        return;
-      }
-      
-      let reportsQuery;
-      if (user.role === 'professional') {
-        reportsQuery = query(collection(firestore, "users", user.uid, "reports"), orderBy("createdAt", "desc"));
-      } else {
-        reportsQuery = query(collectionGroup(firestore, "reports"), where("patientId", "==", user.uid), orderBy("createdAt", "desc"));
-      }
-      
-      getDocs(reportsQuery)
-        .then(querySnapshot => {
-          const fetchedReports = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredReport));
-          setReports(fetchedReports);
-        })
-        .catch(serverError => {
-            const permissionError = new FirestorePermissionError({
-              path: (reportsQuery as any).path,
-              operation: 'list'
-            });
-            errorEmitter.emit('permission-error', permissionError);
-        })
-        .finally(() => {
-            setLoading(false);
-        });
-    };
-
-    if (user && firestore) {
-      fetchReports();
+  const reportsQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    if (user.role === 'professional') {
+      return query(collection(firestore, "users", user.uid, "reports"), orderBy("createdAt", "desc"));
+    } else {
+      return query(collectionGroup(firestore, "reports"), where("patientId", "==", user.uid), orderBy("createdAt", "desc"));
     }
-  }, [user, firestore, t, toast]);
+  }, [user, firestore]);
 
+  const { data: reports, isLoading: loading } = useCollection<StoredReport>(reportsQuery);
+  
   const handleDelete = async () => {
     if (!reportToDelete || !user || user.role !== 'professional' || !firestore) return;
     
@@ -113,7 +85,6 @@ export default function ReportsPage() {
     
     deleteDoc(docRef)
       .then(() => {
-        setReports(reports.filter(report => report.id !== reportToDelete));
         toast({
           title: t.deleteReportTitle,
           description: t.deleteReportDescription,
@@ -250,7 +221,7 @@ export default function ReportsPage() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <p className="ml-4 text-muted-foreground">{t.loadingReports}</p>
             </div>
-          ) : reports.length > 0 ? (
+          ) : reports && reports.length > 0 ? (
             <div className="w-full overflow-x-auto">
               <Table>
                 <TableHeader>
