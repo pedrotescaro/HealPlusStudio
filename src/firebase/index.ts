@@ -1,3 +1,4 @@
+
 'use client';
 
 import { firebaseConfig } from '@/firebase/config';
@@ -46,43 +47,28 @@ export function initializeFirebase() {
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
-  let database = null;
-  let analytics = null;
-
-  // Skip Realtime Database initialization for now to avoid errors
-  console.log('Skipping Realtime Database initialization to avoid URL parsing errors');
-  
   const auth = getAuth(firebaseApp);
   const firestore = getFirestore(firebaseApp);
+  const database = getDatabase(firebaseApp);
+  const analytics = (typeof window !== 'undefined' && isSupported()) ? getAnalytics(firebaseApp) : null;
 
-  if (typeof window !== 'undefined') {
-    isSupported().then((supported) => {
-      if (supported) {
-        analytics = getAnalytics(firebaseApp);
-        console.log('Firebase Analytics initialized.');
-      } else {
-        console.log('Firebase Analytics is not supported in this environment.');
-      }
-    });
-  }
-  
   console.log('Firebase SDKs initialized:', {
     auth: !!auth,
     firestore: !!firestore,
-    database: false, // Disabled temporarily
-    analytics: 'pending', // Analytics initializes asynchronously
+    database: !!database,
+    analytics: !!analytics,
     appOptions: {
       projectId: firebaseApp.options.projectId,
       databaseURL: firebaseApp.options.databaseURL,
       authDomain: firebaseApp.options.authDomain
     }
   });
-  
+
   return {
     firebaseApp,
     auth,
     firestore,
-    database, // Realtime Database SDK (disabled temporarily)
+    database,
     analytics,
   };
 }
