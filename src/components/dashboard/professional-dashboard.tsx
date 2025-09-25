@@ -40,13 +40,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useFirebase } from "@/firebase";
 import { useCollection } from "@/firebase/firestore/use-collection";
-import { collection, query, orderBy, limit, doc, deleteDoc, getDocs } from "firebase/firestore";
+import { doc, deleteDoc } from "firebase/firestore";
 import { ActivitySummaryChart } from "@/components/dashboard/activity-summary-chart";
 import { useTranslation } from "@/contexts/app-provider";
 import { AnamnesisDetailsView } from "@/components/dashboard/anamnesis-details-view";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
-import type { Query } from "firebase/firestore";
+import { orderBy, limit } from "firebase/firestore";
 
 type StoredAnamnesis = AnamnesisFormValues & { id: string };
 
@@ -55,6 +55,7 @@ export function ProfessionalDashboard() {
   const { t } = useTranslation();
   const router = useRouter();
   const { toast } = useToast();
+  const { firestore } = useFirebase();
   
   const [recordToDelete, setRecordToDelete] = useState<string | null>(null);
   const [recordToView, setRecordToView] = useState<StoredAnamnesis | null>(null);
@@ -68,13 +69,13 @@ export function ProfessionalDashboard() {
     thisMonthEvaluations: 0
   });
 
-  const { data: recentAnamneses, isLoading: loading, error } = useCollection<StoredAnamnesis>('anamnesis', {
+  const { data: recentAnamneses, isLoading: loading } = useCollection<StoredAnamnesis>('anamnesis', {
     constraints: [orderBy("data_consulta", "desc"), limit(5)],
-    isGroup: true
   });
-  const { data: allAnamneses } = useCollection<StoredAnamnesis>('anamnesis', { isGroup: true });
-  const { data: allReports } = useCollection<any>('reports', { isGroup: true });
-  const { data: allComparisons } = useCollection<any>('comparisons', { isGroup: true });
+
+  const { data: allAnamneses } = useCollection<StoredAnamnesis>('anamnesis');
+  const { data: allReports } = useCollection<any>('reports');
+  const { data: allComparisons } = useCollection<any>('comparisons');
 
   useEffect(() => {
     if(allAnamneses && allReports && allComparisons) {
@@ -109,9 +110,9 @@ export function ProfessionalDashboard() {
   }, [allAnamneses, allReports, allComparisons]);
 
   const handleDelete = async () => {
-    if (!recordToDelete || !user) return;
+    if (!recordToDelete || !user || !firestore) return;
 
-    const docRef = doc(useFirebase().firestore, "users", user.uid, "anamnesis", recordToDelete);
+    const docRef = doc(firestore, "users", user.uid, "anamnesis", recordToDelete);
     deleteDoc(docRef)
       .then(() => {
         toast({

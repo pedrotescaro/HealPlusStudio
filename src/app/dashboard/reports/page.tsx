@@ -37,14 +37,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useFirebase, useCollection } from "@/firebase";
-import { collection, query, orderBy, doc, deleteDoc, Timestamp, getDoc, where, collectionGroup } from "firebase/firestore";
+import { doc, deleteDoc, Timestamp, getDoc } from "firebase/firestore";
 import { useTranslation } from "@/contexts/app-provider";
 import jsPDF from "jspdf";
 import autoTable from 'jspdf-autotable';
 import type { AnamnesisFormValues } from "@/lib/anamnesis-schema";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
-import type { Query } from "firebase/firestore";
+import { orderBy } from "firebase/firestore";
 
 interface StoredReport {
   id: string;
@@ -67,13 +67,10 @@ export default function ReportsPage() {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [currentReportForPdf, setCurrentReportForPdf] = useState<StoredReport | null>(null);
 
-  const { data: reports, isLoading: loading } = useCollection<StoredReport>(
-    'reports',
-    { 
-      isGroup: true, 
-      constraints: [orderBy("createdAt", "desc")]
-    }
-  );
+  const { data: reports, isLoading: loading } = useCollection<StoredReport>('reports', {
+    isGroup: true,
+    constraints: [orderBy("createdAt", "desc")]
+  });
   
   const handleDelete = async () => {
     if (!reportToDelete || !user || user.role !== 'professional' || !firestore) return;

@@ -61,21 +61,25 @@ export function useCollection<T = any>(
     if (!firestore || !path || !user) return null;
 
     let q: Query;
+    const allConstraints = [...constraints];
+    
     if (isGroup) {
-      // For collection group queries, filter by professionalId to ensure security rules pass.
-      const groupConstraints = [...constraints, where('professionalId', '==', user.uid)];
-      q = query(collectionGroup(firestore, path), ...groupConstraints);
+      // For collection group queries, filter by the current user's ID to ensure security rules pass.
+      const userFilter = user.role === 'professional' 
+        ? where('professionalId', '==', user.uid)
+        : where('patientId', '==', user.uid);
+      allConstraints.push(userFilter);
+      q = query(collectionGroup(firestore, path), ...allConstraints);
     } else {
-      q = query(collection(firestore, path), ...constraints);
+      q = query(collection(firestore, path), ...allConstraints);
     }
     return q;
-  }, [firestore, path, user, JSON.stringify(constraints), isGroup]); // stringify constraints for deep comparison
+  }, [firestore, path, user, JSON.stringify(constraints), isGroup]);
 
 
   useEffect(() => {
     if (!memoizedQuery) {
       setData(null);
-      // Set loading to false only if we are not expecting a query to run
       if (!path || !firestore) {
         setIsLoading(false);
       }
@@ -100,16 +104,13 @@ export function useCollection<T = any>(
       (error: FirestoreError) => {
         console.error("Firestore onSnapshot error in useCollection:", error.code, error.message);
         
-        let path: string = 'unknown';
-        try {
-            // Attempt to get path from our memoized query
-            // This is an internal property and might break, so wrap in try-catch
-            path = (memoizedQuery as any)._query.path.canonicalString();
-        } catch {}
+        // This is a simplified path for the error message.
+        // A more robust solution might try to reconstruct the full path.
+        const errorPath = isGroup ? `subcollection: ${path}` : path || 'unknown path';
 
         const contextualError = new FirestorePermissionError({
           operation: 'list',
-          path,
+          path: errorPath,
         });
 
         setError(contextualError);
@@ -122,7 +123,7 @@ export function useCollection<T = any>(
     );
 
     return () => unsubscribe();
-  }, [memoizedQuery, path, firestore]);
+  }, [memoizedQuery, path, firestore, isGroup]);
 
   return { data, isLoading, error };
 }
