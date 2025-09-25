@@ -33,7 +33,6 @@ import {
   Sparkles
 } from "lucide-react";
 import Link from "next/link";
-import { SidebarProvider } from "@/components/ui/sidebar";
 import { motion } from "framer-motion";
 
 export default function Home() {
@@ -41,16 +40,19 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // Only redirect once the loading state is resolved.
     if (!loading && user) {
       router.replace("/dashboard");
     }
   }, [user, loading, router]);
 
-  if (loading || user) {
-    return <LoadingPage message={user ? "Redirecionando para o dashboard..." : "Carregando Heal+..."} />;
+  if (loading) {
+    return <LoadingPage message="Carregando Heal+..." />;
   }
-  
+
+  if (user) {
+     return <LoadingPage message="Redirecionando para o dashboard..." />;
+  }
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -95,12 +97,8 @@ export default function Home() {
     },
   };
 
-
-  // Render the landing page only if not loading and no user is logged in
   return (
-    <SidebarProvider>
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 relative overflow-hidden">
-      {/* Background Animation */}
       <div className="fixed inset-0 -z-10">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/5 via-transparent to-primary/10"></div>
         <motion.div
@@ -122,7 +120,6 @@ export default function Home() {
         ></motion.div>
       </div>
 
-      {/* Header */}
       <motion.header
         initial={{ y: -100 }}
         animate={{ y: 0 }}
@@ -154,9 +151,7 @@ export default function Home() {
         </div>
       </motion.header>
 
-      {/* Hero Section */}
       <section className="relative py-12 sm:py-16 md:py-20 lg:py-24 xl:py-32 px-3 sm:px-4 md:px-6 lg:px-8 overflow-hidden">
-        {/* Background decoration */}
         <div className="absolute inset-0 -z-10">
           <motion.div className="absolute top-1/4 left-1/4 w-48 sm:w-72 lg:w-96 h-48 sm:h-72 lg:h-96 bg-gradient-to-r from-primary/20 to-primary/10 rounded-full blur-3xl" variants={pulseVariants} animate="pulsing"></motion.div>
           <motion.div className="absolute bottom-1/4 right-1/4 w-64 sm:w-96 lg:w-[32rem] h-64 sm:h-96 lg:h-[32rem] bg-gradient-to-r from-primary/10 to-primary/5 rounded-full blur-3xl" variants={pulseVariants} animate="pulsing" transition={{...pulseVariants.pulsing.transition, delay: 1}}></motion.div>
@@ -170,7 +165,6 @@ export default function Home() {
           animate="visible"
         >
           <div className="max-w-6xl mx-auto space-y-8 sm:space-y-12 lg:space-y-16">
-            {/* Badge */}
             <motion.div
               variants={itemVariants}
               className="inline-flex items-center px-4 sm:px-6 py-3 rounded-full bg-gradient-to-r from-primary/10 to-primary/5 text-primary text-sm sm:text-base font-semibold border border-primary/20 shadow-lg backdrop-blur-sm">
@@ -233,7 +227,6 @@ export default function Home() {
               </motion.div>
             </motion.div>
             
-            {/* Stats */}
             <motion.div variants={itemVariants} className="grid grid-cols-3 gap-4 sm:gap-6 md:gap-8 lg:gap-12 pt-8 sm:pt-12 md:pt-16 lg:pt-20 max-w-3xl mx-auto">
               <motion.div whileHover={{scale: 1.1}} className="text-center group">
                 <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-primary">IA</div>
@@ -252,7 +245,6 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* Video Section */}
       <section className="py-20 sm:py-32 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-background via-muted/10 to-background">
         <div className="container mx-auto">
           <div className="text-center mb-12 sm:mb-16">
@@ -280,9 +272,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features Section */}
       <section className="py-12 sm:py-16 md:py-20 lg:py-24 xl:py-32 px-3 sm:px-4 md:px-6 lg:px-8 bg-gradient-to-br from-muted/10 via-background to-muted/20 relative overflow-hidden">
-        {/* Background decoration */}
         <div className="absolute inset-0 -z-10">
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/5 via-transparent to-primary/10"></div>
           <motion.div className="absolute top-1/3 right-1/4 w-64 sm:w-96 h-64 sm:h-96 bg-gradient-to-r from-primary/10 to-transparent rounded-full blur-3xl" variants={pulseVariants} animate="pulsing" transition={{...pulseVariants.pulsing.transition, delay: 0.7}}></motion.div>
@@ -359,9 +349,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Benefits Section */}
       <section className="py-20 sm:py-32 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary/5 via-background to-primary/10 relative overflow-hidden">
-        {/* Background decoration */}
         <div className="absolute inset-0 -z-10">
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/5 via-transparent to-primary/10"></div>
           <motion.div className="absolute top-1/4 right-1/3 w-80 sm:w-96 lg:w-[28rem] h-80 sm:h-96 lg:h-[28rem] bg-gradient-to-r from-primary/15 to-primary/5 rounded-full blur-3xl" variants={pulseVariants} animate="pulsing" transition={{...pulseVariants.pulsing.transition, delay: 1}}></motion.div>
@@ -483,7 +471,6 @@ export default function Home() {
         </div>
       </section>
       
-      {/* CTA Section */}
       <section className="py-20 sm:py-32 px-4 sm:px-6 lg:px-8 relative overflow-hidden bg-gradient-to-br from-primary/90 via-primary to-primary/90">
           <div className="absolute inset-0 -z-10">
               <motion.div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/95 via-primary/90 to-primary/95" variants={backgroundCircleVariants} animate="animate"></motion.div>
@@ -539,9 +526,7 @@ export default function Home() {
           </div>
       </section>
 
-      {/* FAQ Section */}
       <section id="faq" className="py-20 sm:py-32 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-background via-muted/10 to-background relative overflow-hidden">
-        {/* Background decoration */}
         <div className="absolute inset-0 -z-10">
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/5 via-transparent to-primary/10"></div>
           <motion.div className="absolute top-1/3 right-1/4 w-64 sm:w-80 lg:w-96 h-64 sm:h-80 lg:h-96 bg-gradient-to-r from-primary/10 to-transparent rounded-full blur-3xl" variants={pulseVariants} animate="pulsing" transition={{...pulseVariants.pulsing.transition, delay: 2}}></motion.div>
@@ -588,9 +573,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white relative overflow-hidden">
-        {/* Background decoration */}
         <div className="absolute inset-0 -z-10">
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-slate-900/95 via-slate-800/90 to-slate-900/95"></div>
           <motion.div className="absolute top-1/4 right-1/4 w-64 sm:w-80 lg:w-96 h-64 sm:h-80 lg:h-96 bg-primary/10 rounded-full blur-3xl" variants={pulseVariants} animate="pulsing" transition={{...pulseVariants.pulsing.transition, delay: 3}}></motion.div>
@@ -599,7 +582,6 @@ export default function Home() {
 
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
-            {/* Contato */}
             <div className="space-y-4 sm:space-y-6">
               <h3 className="text-lg sm:text-xl font-bold text-primary flex items-center gap-2">
                 <Mail className="w-5 h-5" />
@@ -613,7 +595,6 @@ export default function Home() {
               </div>
             </div>
             
-            {/* Navegação */}
             <div className="space-y-4 sm:space-y-6">
               <h3 className="text-lg sm:text-xl font-bold text-primary">Navegação</h3>
               <ul className="space-y-3">
@@ -622,7 +603,6 @@ export default function Home() {
               </ul>
             </div>
             
-            {/* Conecte-se */}
             <div className="space-y-4 sm:space-y-6">
               <h3 className="text-lg sm:text-xl font-bold text-primary">Conecte-se</h3>
               <div className="flex items-center space-x-4 sm:space-x-6">
@@ -643,7 +623,6 @@ export default function Home() {
             </div>
           </div>
           
-          {/* Linha divisória */}
           <div className="border-t border-slate-700/50 mt-8 sm:mt-12 pt-8 sm:pt-12">
             <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
               <p className="text-sm text-gray-300 text-center md:text-left">
@@ -671,6 +650,5 @@ export default function Home() {
         </div>
       </footer>
     </div>
-    </SidebarProvider>
   );
 }

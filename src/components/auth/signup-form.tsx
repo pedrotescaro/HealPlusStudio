@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { Button } from "@/components/ui/button"
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -11,19 +11,21 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { useAuth } from "@/hooks/use-auth"
-import { useRouter } from "next/navigation"
-import { useToast } from "@/hooks/use-toast"
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/use-auth";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Por favor, insira um email válido." }),
-  password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
-})
+  password: z
+    .string()
+    .min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
+});
 
-export function LoginForm() {
-  const { login, loading } = useAuth();
+export function SignupForm() {
+  const { signup, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -33,20 +35,20 @@ export function LoginForm() {
       email: "",
       password: "",
     },
-  })
+  });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      await login(values.email, values.password);
+      await signup(values.email, values.password);
       toast({
-        title: "Login bem-sucedido!",
+        title: "Cadastro realizado com sucesso!",
         description: "Redirecionando para o dashboard...",
       });
-      router.push('/dashboard');
+      router.push("/dashboard");
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Erro no login",
+        title: "Erro no cadastro",
         description: error.message || "Ocorreu um erro. Tente novamente.",
       });
     }
@@ -82,9 +84,9 @@ export function LoginForm() {
           )}
         />
         <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Entrando..." : "Entrar"}
+          {loading ? "Criando conta..." : "Criar conta"}
         </Button>
       </form>
     </Form>
-  )
+  );
 }

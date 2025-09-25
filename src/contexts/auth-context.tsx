@@ -1,40 +1,79 @@
-
 "use client";
 
-import { createContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useState, useEffect, ReactNode, useContext } from 'react';
+import { 
+  Auth, 
+  onAuthStateChanged, 
+  User, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword,
+  signOut,
+  GoogleAuthProvider,
+  OAuthProvider,
+  signInWithPopup
+} from 'firebase/auth';
+import { useFirebase } from '@/firebase'; // Using the main hook to get auth instance
 
 interface AuthContextType {
-  user: any; 
+  user: User | null;
   loading: boolean;
-  login: (user: any) => void;
-  logout: () => void;
+  login: (email: string, pass: string) => Promise<any>;
+  signup: (email: string, pass: string) => Promise<any>;
+  logout: () => Promise<void>;
+  signInWithGoogle: () => Promise<any>;
+  signInWithApple: () => Promise<any>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<any>(null);
+  const { auth, isUserLoading } = useFirebase(); // Get auth instance and its loading state
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Simulate auth logic
   useEffect(() => {
-    const timer = setTimeout(() => {
+    // This effect now combines the app's loading state with Firebase's auth state loading
+    setLoading(isUserLoading);
+    if (!isUserLoading && auth) {
+      const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+        setUser(firebaseUser);
+        setLoading(false);
+      });
+      return () => unsubscribe();
+    } else if (!auth) {
       setLoading(false);
-    }, 1000);
+    }
+  }, [isUserLoading, auth]);
+  
+  const login = (email: string, pass: string) => {
+    if (!auth) throw new Error("Auth service not available");
+    return signInWithEmailAndPassword(auth, email, pass);
+  };
 
-    return () => clearTimeout(timer);
-  }, []);
-
-  const login = (userData: any) => {
-    setUser(userData);
+  const signup = (email: string, pass: string) => {
+    if (!auth) throw new Error("Auth service not available");
+    return createUserWithEmailAndPassword(auth, email, pass);
   };
 
   const logout = () => {
-    setUser(null);
+    if (!auth) throw new Error("Auth service not available");
+    return signOut(auth);
+  };
+
+  const signInWithGoogle = () => {
+    if (!auth) throw new Error("Auth service not available");
+    const provider = new GoogleAuthProvider();
+    return signInWithPopup(auth, provider);
+  };
+
+  const signInWithApple = () => {
+    if (!auth) throw new Error("Auth service not available");
+    const provider = new OAuthProvider('apple.com');
+    return signInWithPopup(auth, provider);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout, signInWithGoogle, signInWithApple }}>
       {children}
     </AuthContext.Provider>
   );
