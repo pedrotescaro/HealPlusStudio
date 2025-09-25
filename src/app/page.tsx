@@ -1,13 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { FeatureCard } from "@/components/ui/feature-card";
-import { LoadingPage } from "@/components/ui/loading-spinner";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { FAQAccordion } from "@/components/ui/faq-accordion";
 import { Logo } from "@/components/logo";
 import { 
@@ -34,20 +29,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+
 
 export default function Home() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && user) {
-      router.replace("/dashboard");
-    }
-  }, [user, loading, router]);
-
-  if (loading || user) {
-    return <LoadingPage message="Carregando Heal+..." />;
-  }
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -430,7 +415,7 @@ export default function Home() {
                 <Card className="p-6 sm:p-8 text-center hover:shadow-2xl transition-all duration-500 bg-gradient-to-br from-background/90 to-background/70 border border-border/50 backdrop-blur-sm group">
                   <CardContent className="space-y-4 sm:space-y-6">
                     <motion.div whileHover={{scale: 1.1}} className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-primary/20 to-primary/10 rounded-full flex items-center justify-center mx-auto">
-                      <TrendingUp className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
+                      <TrendingUp className="h-8 w-8 sm:h-10 sm:h-10 text-primary" />
                     </motion.div>
                     <motion.div whileHover={{scale: 1.1}} className="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary">TIMERS</motion.div>
                     <p className="text-sm sm:text-base text-muted-foreground font-medium">Framework</p>
@@ -442,7 +427,7 @@ export default function Home() {
                 <Card className="p-6 sm:p-8 text-center hover:shadow-2xl transition-all duration-500 bg-gradient-to-br from-background/90 to-background/70 border border-border/50 backdrop-blur-sm group">
                   <CardContent className="space-y-4 sm:space-y-6">
                     <motion.div whileHover={{scale: 1.1}} className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-primary/20 to-primary/10 rounded-full flex items-center justify-center mx-auto">
-                      <Activity className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
+                      <Activity className="h-8 w-8 sm:h-10 sm:h-10 text-primary" />
                     </motion.div>
                     <motion.div whileHover={{scale: 1.1}} className="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary">PDF</motion.div>
                     <p className="text-sm sm:text-base text-muted-foreground font-medium">Relatórios</p>
