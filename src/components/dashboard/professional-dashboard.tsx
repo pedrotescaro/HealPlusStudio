@@ -149,7 +149,7 @@ export function ProfessionalDashboard() {
   };
   
   const handleEdit = (id: string) => {
-    router.push(`/anamnesis?edit=${id}`);
+    router.push(`/dashboard/anamnesis?edit=${id}`);
   };
 
   return (
@@ -235,7 +235,7 @@ export function ProfessionalDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent className="mt-auto">
-            <Link href="/anamnesis" passHref>
+            <Link href="/dashboard/anamnesis" passHref>
               <Button className="w-full">{t.createForm}</Button>
             </Link>
           </CardContent>
@@ -344,7 +344,7 @@ export function ProfessionalDashboard() {
             ) : (
               <div className="text-center py-8">
                 <p className="text-muted-foreground mb-4">{t.noRecordsFound}</p>
-                <Link href="/anamnesis" passHref>
+                <Link href="/dashboard/anamnesis" passHref>
                   <Button variant="outline">
                     <PlusCircle className="mr-2" />
                     {t.createFirstRecord}

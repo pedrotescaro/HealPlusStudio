@@ -72,13 +72,11 @@ export default function ReportsPage() {
     if (user.role === 'professional') {
       return query(collection(firestore, "users", user.uid, "reports"), orderBy("createdAt", "desc"));
     } else {
-      // For patients, we query the collection group as they need to find reports
-      // where they are the patient, which might be stored under different professionals.
       return query(collectionGroup(firestore, "reports"), where("patientId", "==", user.uid), orderBy("createdAt", "desc"));
     }
   }, [user, firestore]);
 
-  const { data: reports, isLoading: loading } = useCollection<StoredReport>(reportsQuery as Query<StoredReport> | null);
+  const { data: reports, isLoading: loading } = useCollection<StoredReport>(reportsQuery);
   
   const handleDelete = async () => {
     if (!reportToDelete || !user || user.role !== 'professional' || !firestore) return;
