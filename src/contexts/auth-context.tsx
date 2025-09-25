@@ -20,6 +20,7 @@ import { useFirebase } from '@/firebase'; // Using the main hook to get auth ins
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
   user: (User & { role?: 'professional' | 'patient' }) | null;
@@ -48,6 +49,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     (User & { role?: 'professional' | 'patient' }) | null
   >(null);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   const fetchUserRole = async (firebaseUser: User | null) => {
     if (firebaseUser && firestore) {
@@ -135,14 +137,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       createdAt: new Date().toISOString(),
     };
 
-    // Use non-blocking write with contextual error handling
     setDoc(userDocRef, userData, { merge: true })
       .then(async () => {
-        // Only refresh user and proceed on successful write
         await refreshUser();
       })
       .catch(serverError => {
-        // Construct and emit the detailed permission error
         const permissionError = new FirestorePermissionError({
           path: userDocRef.path,
           operation: 'write',
@@ -150,10 +149,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
         errorEmitter.emit('permission-error', permissionError);
         
-        // We can also re-throw a more generic error for local handling if needed
-        // For instance, to show a toast message to the user.
-        // But we must not console.error the permissionError itself.
-        throw new Error("Não foi possível definir o seu perfil de usuário.");
+        toast({
+          title: "Erro de Permissão",
+          description: "Não foi possível definir seu perfil. Verifique as regras de segurança do Firestore.",
+          variant: "destructive",
+        });
       });
   };
 
