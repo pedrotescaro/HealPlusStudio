@@ -68,25 +68,20 @@ export function ProfessionalDashboard() {
     thisMonthEvaluations: 0
   });
 
-  const baseQuery = useMemoFirebase(() => {
+  const anamnesisCollectionQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
-    return collection(firestore, "users", user.uid);
+    return query(collection(firestore, "users", user.uid, "anamnesis"), orderBy("data_consulta", "desc"));
   }, [user, firestore]);
 
-  const anamnesisCollectionQuery = useMemoFirebase(() => {
-    if (!baseQuery) return null;
-    return query(collection(baseQuery, "anamnesis"), orderBy("data_consulta", "desc"));
-  }, [baseQuery]);
-
   const reportsCollectionQuery = useMemoFirebase(() => {
-    if (!baseQuery) return null;
-    return collection(baseQuery, "reports");
-  }, [baseQuery]);
+    if (!user || !firestore) return null;
+    return collection(firestore, "users", user.uid, "reports");
+  }, [user, firestore]);
 
   const comparisonsCollectionQuery = useMemoFirebase(() => {
-    if (!baseQuery) return null;
-    return collection(baseQuery, "comparisons");
-  }, [baseQuery]);
+    if (!user || !firestore) return null;
+    return collection(firestore, "users", user.uid, "comparisons");
+  }, [user, firestore]);
 
   const { data: allAnamneses, isLoading: anamnesisLoading } = useCollection<StoredAnamnesis>(anamnesisCollectionQuery);
   const { data: allReports, isLoading: reportsLoading } = useCollection(reportsCollectionQuery);
@@ -127,7 +122,7 @@ export function ProfessionalDashboard() {
       });
 
     } catch (error) {
-      console.error("Error processing dashboard data: ", error);
+      console.error("Error fetching dashboard data from Firestore: ", error);
       toast({ title: t.errorTitle, description: t.dashboardErrorLoading, variant: "destructive" });
     }
   }, [allAnamneses, allReports, allComparisons, loading, toast, t]);
