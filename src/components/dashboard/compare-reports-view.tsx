@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "@/contexts/app-provider";
 import { useAuth } from "@/hooks/use-auth";
 import { useFirebase } from "@/firebase";
+import { useCollection } from "@/firebase/firestore/use-collection";
 import { collection, query, getDocs, orderBy } from "firebase/firestore";
 import { useState, useEffect } from "react";
 import { 
@@ -46,31 +47,9 @@ export function CompareReportsView() {
   const { toast } = useToast();
   const [selectedReports, setSelectedReports] = useState<string[]>([]);
   const [comparisonData, setComparisonData] = useState<ReportData[]>([]);
-  const [reports, setReports] = useState<ReportData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchReports = async () => {
-      if (!user || !firestore) {
-        setIsLoading(false);
-        return;
-      }
-      setIsLoading(true);
-      try {
-        const reportsQuery = query(collection(firestore, "users", user.uid, "reports"), orderBy("date", "desc"));
-        const querySnapshot = await getDocs(reportsQuery);
-        const fetchedReports = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ReportData));
-        setReports(fetchedReports);
-      } catch (e) {
-        console.error("Failed to fetch reports:", e);
-        toast({ title: "Erro", description: "Não foi possível carregar os relatórios.", variant: "destructive" });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchReports();
-  }, [user, firestore, toast]);
-
+  const { data: reports, isLoading } = useCollection<ReportData>('reports');
+  
   const handleReportSelect = (reportId: string) => {
     setSelectedReports(prev => 
       prev.includes(reportId) 

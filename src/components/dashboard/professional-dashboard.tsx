@@ -39,6 +39,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useFirebase } from "@/firebase";
+import { useCollection } from "@/firebase/firestore/use-collection";
 import { collection, query, orderBy, limit, doc, deleteDoc, getDocs } from "firebase/firestore";
 import { ActivitySummaryChart } from "@/components/dashboard/activity-summary-chart";
 import { useTranslation } from "@/contexts/app-provider";
@@ -54,7 +55,6 @@ export function ProfessionalDashboard() {
   const { t } = useTranslation();
   const router = useRouter();
   const { toast } = useToast();
-  const { firestore } = useFirebase();
   
   const [recordToDelete, setRecordToDelete] = useState<string | null>(null);
   const [recordToView, setRecordToView] = useState<StoredAnamnesis | null>(null);
@@ -67,86 +67,57 @@ export function ProfessionalDashboard() {
     pendingEvaluations: 0,
     thisMonthEvaluations: 0
   });
-  const [recentAnamneses, setRecentAnamneses] = useState<StoredAnamnesis[]>([]);
-  const [loading, setLoading] = useState(true);
 
+  const { data: recentAnamneses, isLoading: loading, error } = useCollection<StoredAnamnesis>('anamnesis', {
+    constraints: [orderBy("data_consulta", "desc"), limit(5)],
+    isGroup: true
+  });
+  const { data: allAnamneses } = useCollection<StoredAnamnesis>('anamnesis', { isGroup: true });
+  const { data: allReports } = useCollection<any>('reports', { isGroup: true });
+  const { data: allComparisons } = useCollection<any>('comparisons', { isGroup: true });
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!user || !firestore) {
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      try {
-        const anamnesisQuery = query(collection(firestore, "users", user.uid, "anamnesis"), orderBy("data_consulta", "desc"));
-        const reportsQuery = query(collection(firestore, "users", user.uid, "reports"));
-        const comparisonsQuery = query(collection(firestore, "users", user.uid, "comparisons"));
-        
-        const [anamnesisSnapshot, reportsSnapshot, comparisonsSnapshot] = await Promise.all([
-          getDocs(anamnesisQuery),
-          getDocs(reportsQuery),
-          getDocs(comparisonsQuery)
-        ]);
+    if(allAnamneses && allReports && allComparisons) {
+      const anamnesisCount = allAnamneses.length;
+      const reportsCount = allReports.length;
+      const comparisonsCount = allComparisons.length;
+      
+      const uniquePatients = new Set(allAnamneses.map(record => record.nome_cliente)).size;
+      
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      const thisMonthEvaluations = allAnamneses.filter(record => {
+        const recordDate = new Date(record.data_consulta);
+        return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
+      }).length;
 
-        const allAnamneses = anamnesisSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredAnamnesis));
-        
-        const anamnesisCount = allAnamneses.length;
-        const reportsCount = reportsSnapshot.size;
-        const comparisonsCount = comparisonsSnapshot.size;
-        
-        const uniquePatients = new Set(allAnamneses.map(record => record.nome_cliente)).size;
-        
-        const currentMonth = new Date().getMonth();
-        const currentYear = new Date().getFullYear();
-        const thisMonthEvaluations = allAnamneses.filter(record => {
-          const recordDate = new Date(record.data_consulta);
-          return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
-        }).length;
+      setActivityData([
+          { name: "completedForms", value: anamnesisCount },
+          { name: "generatedReports", value: reportsCount },
+          { name: "comparisons", value: comparisonsCount },
+      ]);
 
-        setRecentAnamneses(allAnamneses.slice(0, 5));
-
-        setActivityData([
-            { name: "completedForms", value: anamnesisCount },
-            { name: "generatedReports", value: reportsCount },
-            { name: "comparisons", value: comparisonsCount },
-        ]);
-
-        setDashboardStats({
-          totalPatients: uniquePatients,
-          totalEvaluations: anamnesisCount,
-          totalReports: reportsCount,
-          totalComparisons: comparisonsCount,
-          pendingEvaluations: 0, 
-          thisMonthEvaluations: thisMonthEvaluations
-        });
-
-      } catch (error) {
-        console.error("Error fetching dashboard data from Firestore: ", error);
-        // Do not toast here, let the UI show a state.
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [user, firestore]);
+      setDashboardStats({
+        totalPatients: uniquePatients,
+        totalEvaluations: anamnesisCount,
+        totalReports: reportsCount,
+        totalComparisons: comparisonsCount,
+        pendingEvaluations: 0, 
+        thisMonthEvaluations: thisMonthEvaluations
+      });
+    }
+  }, [allAnamneses, allReports, allComparisons]);
 
   const handleDelete = async () => {
-    if (!recordToDelete || !user || !firestore) return;
+    if (!recordToDelete || !user) return;
 
-    const docRef = doc(firestore, "users", user.uid, "anamnesis", recordToDelete);
+    const docRef = doc(useFirebase().firestore, "users", user.uid, "anamnesis", recordToDelete);
     deleteDoc(docRef)
       .then(() => {
         toast({
           title: t.deleteRecordTitle,
           description: t.deleteRecordDescription,
         });
-        // Refresh data after deletion
-        const updatedAnamneses = recentAnamneses.filter(r => r.id !== recordToDelete);
-        setRecentAnamneses(updatedAnamneses);
-        setDashboardStats(prev => ({...prev, totalEvaluations: prev.totalEvaluations - 1}));
-
       })
       .catch((serverError) => {
         const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'delete' });
@@ -299,7 +270,7 @@ export function ProfessionalDashboard() {
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   <p className="ml-4 text-muted-foreground">{t.loadingRecords}</p>
                 </div>
-              ) : recentAnamneses.length > 0 ? (
+              ) : recentAnamneses && recentAnamneses.length > 0 ? (
               <div className="w-full overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -362,7 +333,7 @@ export function ProfessionalDashboard() {
               </div>
             )}
           </CardContent>
-          { recentAnamneses.length > 0 && (
+          { recentAnamneses && recentAnamneses.length > 0 && (
             <CardFooter>
               <Link href="/dashboard/anamnesis-records" className="w-full">
                 <Button variant="secondary" className="w-full">{t.viewAllRecords}</Button>

@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import type { AnamnesisFormValues } from "@/lib/anamnesis-schema";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Separator } from "../ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
 import { useAuth } from "@/hooks/use-auth";
 

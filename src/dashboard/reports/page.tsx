@@ -37,6 +37,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useFirebase } from "@/firebase";
+import { useCollection } from "@/firebase/firestore/use-collection";
 import { collection, query, orderBy, doc, deleteDoc, Timestamp, getDoc, where, collectionGroup, getDocs } from "firebase/firestore";
 import { useTranslation } from "@/contexts/app-provider";
 import jsPDF from "jspdf";
@@ -61,46 +62,20 @@ export default function ReportsPage() {
   const { toast } = useToast();
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { firestore } = useFirebase();
   const [reportToDelete, setReportToDelete] = useState<string | null>(null);
   const [reportToView, setReportToView] = useState<StoredReport | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [currentReportForPdf, setCurrentReportForPdf] = useState<StoredReport | null>(null);
-  const [reports, setReports] = useState<StoredReport[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchReports = async () => {
-      if (!user || !firestore) {
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-
-      try {
-        let reportsQuery: Query;
-        if (user.role === 'professional') {
-          reportsQuery = query(collection(firestore, "users", user.uid, "reports"), orderBy("createdAt", "desc"));
-        } else {
-          reportsQuery = query(collectionGroup(firestore, "reports"), where("patientId", "==", user.uid), orderBy("createdAt", "desc"));
-        }
-        const querySnapshot = await getDocs(reportsQuery);
-        const fetchedReports = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredReport));
-        setReports(fetchedReports);
-      } catch (e) {
-        console.error("Failed to fetch reports:", e);
-        toast({ title: "Erro", description: "Não foi possível carregar os relatórios.", variant: "destructive" });
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchReports();
-  }, [user, firestore, toast]);
+  
+  const { data: reports, isLoading: loading } = useCollection<StoredReport>('reports', {
+      isGroup: user?.role !== 'professional',
+      constraints: user?.role !== 'professional' ? [where("patientId", "==", user?.uid || "")] : [orderBy("createdAt", "desc")]
+  });
   
   const handleDelete = async () => {
-    if (!reportToDelete || !user || user.role !== 'professional' || !firestore) return;
+    if (!reportToDelete || !user || user.role !== 'professional') return;
     
-    const docRef = doc(firestore, "users", user.uid, "reports", reportToDelete);
+    const docRef = doc(useFirebase().firestore, "users", user.uid, "reports", reportToDelete);
     
     deleteDoc(docRef)
       .then(() => {
@@ -108,7 +83,6 @@ export default function ReportsPage() {
           title: t.deleteReportTitle,
           description: t.deleteReportDescription,
         });
-        setReports(prev => prev.filter(r => r.id !== reportToDelete));
       })
       .catch((serverError) => {
         const permissionError = new FirestorePermissionError({
@@ -123,12 +97,12 @@ export default function ReportsPage() {
   };
 
   const handleSavePdf = async (report: StoredReport | null) => {
-    if (!report || !user || !firestore) return;
+    if (!report || !user) return;
     setCurrentReportForPdf(report);
     setPdfLoading(true);
 
     try {
-        const anamnesisDocRef = doc(firestore, "users", report.professionalId, "anamnesis", report.anamnesisId);
+        const anamnesisDocRef = doc(useFirebase().firestore, "users", report.professionalId, "anamnesis", report.anamnesisId);
         const anamnesisSnap = await getDoc(anamnesisDocRef);
         if (!anamnesisSnap.exists()) {
           toast({ title: "Erro", description: "Ficha de anamnese associada não encontrada.", variant: "destructive" });
