@@ -66,6 +66,7 @@ export function AnamnesisForm() {
 
   const defaultValues: Partial<AnamnesisFormValues> = {
     patientId: "",
+    professionalId: "",
     nome_cliente: "",
     data_nascimento: "",
     telefone: "",
@@ -324,6 +325,8 @@ export function AnamnesisForm() {
        console.log("Creating unregistered patient ID due to query error");
        data.patientId = `unregistered_${uuidv4()}`;
     }
+
+    data.professionalId = user.uid;
 
     const sanitizedData = Object.fromEntries(
         Object.entries(data).map(([key, value]) => [key, value === undefined ? "" : value])

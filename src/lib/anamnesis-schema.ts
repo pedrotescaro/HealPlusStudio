@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const anamnesisFormSchema = z.object({
   patientId: z.string().optional(),
+  professionalId: z.string().optional(),
   nome_cliente: z.string().min(3, "Nome é obrigatório"),
   data_nascimento: z.string().optional(),
   telefone: z.string().optional(),

@@ -39,7 +39,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useFirebase } from "@/firebase";
-import { collection, doc, deleteDoc, getDocs, query, orderBy, limit } from "firebase/firestore";
+import { collection, doc, deleteDoc, getDocs, query, orderBy, limit, where } from "firebase/firestore";
 import { ActivitySummaryChart } from "@/components/dashboard/activity-summary-chart";
 import { useTranslation } from "@/contexts/app-provider";
 import { AnamnesisDetailsView } from "@/components/dashboard/anamnesis-details-view";
@@ -75,7 +75,7 @@ export function ProfessionalDashboard() {
       const fetchRecentAnamneses = async () => {
         setLoading(true);
         try {
-          const q = query(collection(firestore, "users", user.uid, "anamnesis"), orderBy("data_consulta", "desc"), limit(5));
+          const q = query(collection(firestore, "users", user.uid, "anamnesis"), where("professionalId", "==", user.uid), orderBy("data_consulta", "desc"), limit(5));
           const querySnapshot = await getDocs(q);
           const records = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredAnamnesis));
           setRecentAnamneses(records);
@@ -89,9 +89,9 @@ export function ProfessionalDashboard() {
 
       const fetchAllDataForStats = async () => {
         try {
-            const anamnesisQuery = query(collection(firestore, "users", user.uid, "anamnesis"));
-            const reportsQuery = query(collection(firestore, "users", user.uid, "reports"));
-            const comparisonsQuery = query(collection(firestore, "users", user.uid, "comparisons"));
+            const anamnesisQuery = query(collection(firestore, "users", user.uid, "anamnesis"), where("professionalId", "==", user.uid));
+            const reportsQuery = query(collection(firestore, "users", user.uid, "reports"), where("professionalId", "==", user.uid));
+            const comparisonsQuery = query(collection(firestore, "users", user.uid, "comparisons"), where("professionalId", "==", user.uid));
 
             const [anamnesisSnapshot, reportsSnapshot, comparisonsSnapshot] = await Promise.all([
                 getDocs(anamnesisQuery),

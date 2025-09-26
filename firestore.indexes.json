@@ -1,4 +1,13 @@
 {
-  "indexes": [],
+  "indexes": [
+    {
+      "collectionGroup": "anamnesis",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "professionalId", "order": "ASCENDING" },
+        { "fieldPath": "data_consulta", "order": "DESCENDING" }
+      ]
+    }
+  ],
   "fieldOverrides": []
 }
