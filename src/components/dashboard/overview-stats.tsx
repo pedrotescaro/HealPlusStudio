@@ -3,7 +3,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from '../ui/card';
 import {Users, Calendar, Activity} from 'lucide-react';
 
 export function OverviewStats() {

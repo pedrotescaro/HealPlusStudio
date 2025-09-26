@@ -1,11 +1,11 @@
-import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
+import {Avatar, AvatarFallback, AvatarImage} from '../ui/avatar';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card';
+} from '../ui/card';
 import {appointments, patients} from '../../lib/data';
 import {Button} from '../ui/button';
 import Link from 'next/link';

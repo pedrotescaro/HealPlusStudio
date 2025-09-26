@@ -7,13 +7,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '../../components/ui/table';
 import {
   Card,
   CardContent,
-} from '@/components/ui/card';
-import {Badge} from '@/components/ui/badge';
-import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
+} from '../../components/ui/card';
+import {Badge} from '../../components/ui/badge';
+import {Avatar, AvatarFallback, AvatarImage} from '../../components/ui/avatar';
 import {patients} from '../../lib/data';
 import {formatDate} from '../../lib/utils';
 import {cn} from '../../lib/utils';

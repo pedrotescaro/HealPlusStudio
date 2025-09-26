@@ -1,8 +1,8 @@
 "use client"
 
 import * as React from 'react';
-import { cn } from '@/lib/utils';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { cn } from '../../lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs"
 
 interface BodyMapSelectorProps {
   onLocationSelect: (location: string) => void;

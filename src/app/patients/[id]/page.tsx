@@ -7,11 +7,11 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card';
-import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
-import {Badge} from '@/components/ui/badge';
+} from '../../../components/ui/card';
+import {Avatar, AvatarFallback, AvatarImage} from '../../../components/ui/avatar';
+import {Badge} from '../../../components/ui/badge';
 import {formatDate} from '../../../lib/utils';
-import {PatientWoundTracker} from '@/components/dashboard/patient-wound-tracker';
+import {PatientWoundTracker} from '../../../components/dashboard/patient-wound-tracker';
 
 export default function PatientDetailPage({params}: {params: {id: string}}) {
   const patient = patients.find(p => p.id === params.id);

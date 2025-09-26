@@ -6,21 +6,21 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '../../components/ui/table';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+} from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import {appointments, patients} from '../../lib/data';
 import type {Appointment} from '../../lib/types';
 import {cn} from '../../lib/utils';
 import Link from 'next/link';
-import {Button} from '@/components/ui/button';
+import {Button} from '../../components/ui/button';
 
 const statusVariantMap = {
   Confirmed: 'default',

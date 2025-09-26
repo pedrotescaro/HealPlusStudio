@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useEffect } from 'react';
-import AppSidebar from '@/components/dashboard/app-sidebar';
-import MobileNav from '@/components/dashboard/mobile-nav';
-import { useAuth } from '@/hooks/use-auth';
+import AppSidebar from '../../components/dashboard/app-sidebar';
+import MobileNav from '../../components/dashboard/mobile-nav';
+import { useAuth } from '../../hooks/use-auth';
 import { useRouter } from 'next/navigation';
-import { LoadingPage } from '@/components/ui/loading-spinner';
-import { CatSupport } from '@/components/dashboard/cat-support';
+import { LoadingPage } from '../../components/ui/loading-spinner';
+import { CatSupport } from '../../components/dashboard/cat-support';
 
 export default function DashboardLayout({
   children,

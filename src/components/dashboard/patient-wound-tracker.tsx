@@ -1,5 +1,5 @@
 'use client';
-import type {Patient, WoundEntry} from '@/lib/types';
+import type {Patient, WoundEntry} from '../../lib/types';
 import {useState, useRef} from 'react';
 import Image from 'next/image';
 import {
@@ -9,18 +9,18 @@ import {
   CardTitle,
   CardDescription,
   CardFooter,
-} from '@/components/ui/card';
-import {Button} from '@/components/ui/button';
-import {Textarea} from '@/components/ui/textarea';
-import {Input} from '@/components/ui/input';
-import {Label} from '@/components/ui/label';
-import {formatDate} from '@/lib/utils';
+} from '../ui/card';
+import {Button} from '../ui/button';
+import {Textarea} from '../ui/textarea';
+import {Input} from '../ui/input';
+import {Label} from '../ui/label';
+import {formatDate} from '../../lib/utils';
 import {
   getWoundRiskAssessmentAction,
   summarizeWoundProgressAction,
-} from '@/app/actions';
-import {useToast} from '@/hooks/use-toast';
-import {Alert, AlertDescription, AlertTitle} from '@/components/ui/alert';
+} from '../../app/actions';
+import {useToast} from '../../hooks/use-toast';
+import {Alert, AlertDescription, AlertTitle} from '../ui/alert';
 import {Lightbulb, Bot, Loader2, Sparkles, Upload} from 'lucide-react';
 
 const fileToDataUri = (file: File): Promise<string> =>

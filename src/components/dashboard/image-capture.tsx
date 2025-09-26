@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from '../ui/button';
 import { Camera, RefreshCw, Check, Loader2 } from 'lucide-react';
 import {
   Dialog,
@@ -11,8 +11,8 @@ import {
   DialogDescription,
   DialogFooter,
   DialogTrigger
-} from '@/components/ui/dialog';
-import { useToast } from '@/hooks/use-toast';
+} from '../ui/dialog';
+import { useToast } from '../../hooks/use-toast';
 
 interface ImageCaptureProps {
   onCapture: (dataUri: string) => void;

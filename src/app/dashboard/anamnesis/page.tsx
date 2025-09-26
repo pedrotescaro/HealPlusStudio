@@ -1,12 +1,12 @@
 "use client";
 
 import dynamic from 'next/dynamic';
-import { Card, CardContent } from "@/components/ui/card";
-import { useTranslation } from "@/contexts/app-provider";
-import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent } from "../../../components/ui/card";
+import { useTranslation } from "../../../contexts/app-provider";
+import { Skeleton } from '../../../components/ui/skeleton';
 import { useSearchParams } from 'next/navigation';
 
-const AnamnesisForm = dynamic(() => import('@/components/dashboard/anamnesis-form').then(mod => mod.AnamnesisForm), {
+const AnamnesisForm = dynamic(() => import('../../../components/dashboard/anamnesis-form').then(mod => mod.AnamnesisForm), {
   ssr: false,
   loading: () => (
     <div className="space-y-4">

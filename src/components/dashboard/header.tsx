@@ -1,5 +1,5 @@
 'use client';
-import {SidebarTrigger} from '@/components/ui/sidebar';
+import {SidebarTrigger} from '../ui/sidebar';
 import {usePathname} from 'next/navigation';
 
 const getPageTitle = (pathname: string): string => {

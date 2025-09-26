@@ -16,11 +16,11 @@ import {
   UserCredential,
   signInAnonymously,
 } from 'firebase/auth';
-import { useFirebase } from '@/firebase'; // Using the main hook to get auth instance
+import { useFirebase } from '../firebase'; // Using the main hook to get auth instance
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '../firebase/error-emitter';
+import { FirestorePermissionError } from '../firebase/errors';
+import { useToast } from '../hooks/use-toast';
 
 interface AuthContextType {
   user: (User & { role?: 'professional' | 'patient' }) | null;

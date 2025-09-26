@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useMemo, ReactNode, useEffect } from 'react';
-import { translations, Translation } from '@/lib/translations';
+import { translations, Translation } from '../lib/translations';
 
 export type Language = 'pt-br' | 'en-us';
 export type Theme = 'light' | 'dark' | 'high-contrast';

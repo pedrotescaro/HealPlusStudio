@@ -5,7 +5,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
   ChartConfig,
-} from '@/components/ui/chart';
+} from '../ui/chart';
 
 const chartData = [
   {month: 'January', new: 18, healed: 12},
