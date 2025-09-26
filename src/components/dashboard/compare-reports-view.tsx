@@ -7,8 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "@/contexts/app-provider";
 import { useAuth } from "@/hooks/use-auth";
 import { useFirebase } from "@/firebase";
-import { useCollection } from "@/firebase/firestore/use-collection";
-import { collection, query, getDocs, orderBy } from "firebase/firestore";
+import { collection, query, getDocs, orderBy, where } from "firebase/firestore";
 import { useState, useEffect } from "react";
 import { 
   FileText, 
@@ -23,7 +22,8 @@ import {
   ArrowRight,
   CheckCircle,
   AlertCircle,
-  Info
+  Info,
+  Loader2
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -45,35 +45,81 @@ export function CompareReportsView() {
   const { user } = useAuth();
   const { firestore } = useFirebase();
   const { toast } = useToast();
+  const [reports, setReports] = useState<ReportData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedReports, setSelectedReports] = useState<string[]>([]);
   const [comparisonData, setComparisonData] = useState<ReportData[]>([]);
 
-  const { data: reports, isLoading } = useCollection<ReportData>('reports');
+  useEffect(() => {
+    const fetchReports = async () => {
+      if (!user || !firestore) {
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(true);
+      try {
+        const reportsQuery = query(
+          collection(firestore, "users", user.uid, "reports"),
+          orderBy("createdAt", "desc")
+        );
+        const querySnapshot = await getDocs(reportsQuery);
+        const fetchedReports = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                patientName: data.patientName,
+                date: data.createdAt.toDate().toISOString(),
+                woundType: data.woundType || 'Não especificado',
+                severity: data.severity || 'medium',
+                progress: data.progress || 0,
+                notes: data.reportContent,
+                professional: user.name || 'Desconhecido'
+            };
+        });
+        setReports(fetchedReports);
+      } catch (error) {
+        console.error("Error fetching reports:", error);
+        toast({ title: "Erro", description: "Não foi possível carregar os relatórios.", variant: "destructive" });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchReports();
+  }, [user, firestore, toast]);
   
   const handleReportSelect = (reportId: string) => {
-    setSelectedReports(prev => 
-      prev.includes(reportId) 
-        ? prev.filter(id => id !== reportId)
-        : [...prev, reportId]
-    );
+    setSelectedReports(prev => {
+        if (prev.includes(reportId)) {
+            return prev.filter(id => id !== reportId);
+        }
+        if (prev.length < 2) {
+            return [...prev, reportId];
+        }
+        toast({ title: "Limite Atingido", description: "Você só pode selecionar até 2 relatórios para comparar.", variant: "default"});
+        return prev;
+    });
   };
 
   const handleCompare = () => {
-    if (selectedReports.length < 2) return;
+    if (selectedReports.length < 2) {
+        toast({ title: "Seleção Incompleta", description: "Selecione 2 relatórios para comparar.", variant: "destructive"});
+        return;
+    };
     
     const selectedData = reports?.filter(report => 
       selectedReports.includes(report.id)
     ) || [];
     
-    setComparisonData(selectedData);
+    setComparisonData(selectedData.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
+    toast({ title: "Comparação Realizada", description: "A análise comparativa foi atualizada."});
   };
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'low': return 'bg-green-500';
-      case 'medium': return 'bg-yellow-500';
-      case 'high': return 'bg-red-500';
-      default: return 'bg-gray-500';
+      case 'low': return 'bg-green-100 text-green-800 border-green-200';
+      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'high': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -110,15 +156,6 @@ export function CompareReportsView() {
         </p>
       </div>
 
-      {selectedReports.length < 2 && (
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            Selecione pelo menos 2 relatórios para fazer a comparação.
-          </AlertDescription>
-        </Alert>
-      )}
-
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Seleção de Relatórios */}
         <Card>
@@ -132,7 +169,11 @@ export function CompareReportsView() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {reports?.length === 0 ? (
+            {isLoading ? (
+                <div className="flex justify-center items-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            ) : reports?.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>Nenhum relatório encontrado</p>
@@ -178,6 +219,12 @@ export function CompareReportsView() {
               </div>
             )}
           </CardContent>
+          <CardFooter>
+            <Button onClick={handleCompare} disabled={selectedReports.length < 2} className="w-full">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Comparar Relatórios ({selectedReports.length}/2)
+            </Button>
+          </CardFooter>
         </Card>
 
         {/* Comparação */}
@@ -195,7 +242,7 @@ export function CompareReportsView() {
             {comparisonData.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Selecione relatórios para comparar</p>
+                <p>Selecione 2 relatórios e clique em "Comparar"</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -235,19 +282,18 @@ export function CompareReportsView() {
                     
                     {report.notes && (
                       <div className="mt-3 pt-3 border-t">
-                        <p className="text-sm text-muted-foreground">{report.notes}</p>
+                        <p className="text-sm text-muted-foreground line-clamp-3">{report.notes}</p>
                       </div>
                     )}
                   </div>
                 ))}
-                
+              </div>
+            )}
+          </CardContent>
+           {comparisonData.length > 0 && (
+            <CardFooter className="flex-col items-start gap-4">
                 <Separator />
-                
-                <div className="flex gap-2">
-                  <Button onClick={handleCompare} className="flex-1">
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Atualizar Comparação
-                  </Button>
+                 <div className="flex gap-2">
                   <Button variant="outline">
                     <Download className="h-4 w-4" />
                   </Button>
@@ -255,9 +301,8 @@ export function CompareReportsView() {
                     <Share2 className="h-4 w-4" />
                   </Button>
                 </div>
-              </div>
-            )}
-          </CardContent>
+            </CardFooter>
+           )}
         </Card>
       </div>
 
@@ -267,7 +312,7 @@ export function CompareReportsView() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
-              Análise Comparativa
+              Análise Comparativa (Simulação)
             </CardTitle>
             <CardDescription>
               Insights baseados na comparação dos relatórios
@@ -275,27 +320,26 @@ export function CompareReportsView() {
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="p-4 border rounded-lg">
-                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-green-500" />
+              <div className="p-4 border rounded-lg bg-green-50 border-green-200">
+                <h4 className="font-semibold mb-2 flex items-center gap-2 text-green-800">
+                  <TrendingUp className="h-4 w-4" />
                   Melhorias Identificadas
                 </h4>
-                <ul className="space-y-1 text-sm text-muted-foreground">
-                  <li>• Redução da severidade da ferida</li>
-                  <li>• Aumento do progresso do tratamento</li>
-                  <li>• Melhora na qualidade das anotações</li>
+                <ul className="space-y-1 text-sm text-green-700">
+                  <li>• Redução de <strong>15%</strong> na área da ferida.</li>
+                  <li>• Aumento do tecido de granulação em <strong>20%</strong>.</li>
+                  <li>• Diminuição do exsudato de 'moderado' para 'pequeno'.</li>
                 </ul>
               </div>
               
-              <div className="p-4 border rounded-lg">
-                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-yellow-500" />
+              <div className="p-4 border rounded-lg bg-yellow-50 border-yellow-200">
+                <h4 className="font-semibold mb-2 flex items-center gap-2 text-yellow-800">
+                  <AlertCircle className="h-4 w-4" />
                   Pontos de Atenção
                 </h4>
-                <ul className="space-y-1 text-sm text-muted-foreground">
-                  <li>• Monitorar evolução da ferida</li>
-                  <li>• Ajustar tratamento se necessário</li>
-                  <li>• Manter acompanhamento regular</li>
+                <ul className="space-y-1 text-sm text-yellow-700">
+                  <li>• Leve maceração na pele perilesional.</li>
+                  <li>• Paciente relatou dor esporádica.</li>
                 </ul>
               </div>
             </div>
