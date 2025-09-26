@@ -6,7 +6,7 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import {appointments, patients} from '@/lib/data';
+import {appointments, patients} from '../../lib/data';
 import {Button} from '../ui/button';
 import Link from 'next/link';
 

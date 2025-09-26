@@ -14,10 +14,10 @@ import {
 } from '@/components/ui/card';
 import {Badge} from '@/components/ui/badge';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
-import {patients} from '@/lib/data';
-import {formatDate} from '@/lib/utils';
-import {cn} from '@/lib/utils';
-import type {Patient} from '@/lib/types';
+import {patients} from '../../lib/data';
+import {formatDate} from '../../lib/utils';
+import {cn} from '../../lib/utils';
+import type {Patient} from '../../lib/types';
 
 const riskVariantMap = {
   Low: 'default',

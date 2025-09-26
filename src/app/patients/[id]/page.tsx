@@ -1,6 +1,6 @@
 import {notFound} from 'next/navigation';
 import Image from 'next/image';
-import {patients} from '@/lib/data';
+import {patients} from '../../../lib/data';
 import {
   Card,
   CardContent,
@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import {Badge} from '@/components/ui/badge';
-import {formatDate} from '@/lib/utils';
+import {formatDate} from '../../../lib/utils';
 import {PatientWoundTracker} from '@/components/dashboard/patient-wound-tracker';
 
 export default function PatientDetailPage({params}: {params: {id: string}}) {
