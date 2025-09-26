@@ -131,14 +131,3 @@ declare module 'react-hook-form' {
 declare global {
   const process: any;
 }
-
-/// <reference types="react" />
-/// <reference types="react-dom" />
-
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      [elemName: string]: any;
-    }
-  }
-}
