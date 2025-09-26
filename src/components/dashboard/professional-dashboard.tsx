@@ -72,64 +72,57 @@ export function ProfessionalDashboard() {
 
   useEffect(() => {
     if (user && firestore) {
-      const fetchRecentAnamneses = async () => {
+      const fetchAllData = async () => {
         setLoading(true);
         try {
-          const q = query(collection(firestore, "users", user.uid, "anamnesis"), where("professionalId", "==", user.uid), orderBy("data_consulta", "desc"), limit(5));
-          const querySnapshot = await getDocs(q);
-          const records = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredAnamnesis));
-          setRecentAnamneses(records);
+          // Fetch all collections in parallel
+          const anamnesisQuery = query(collection(firestore, "users", user.uid, "anamnesis"), orderBy("data_consulta", "desc"));
+          const reportsQuery = query(collection(firestore, "users", user.uid, "reports"));
+          const comparisonsQuery = query(collection(firestore, "users", user.uid, "comparisons"));
+
+          const [anamnesisSnapshot, reportsSnapshot, comparisonsSnapshot] = await Promise.all([
+            getDocs(anamnesisQuery),
+            getDocs(reportsQuery),
+            getDocs(comparisonsQuery),
+          ]);
+
+          // Process Anamnesis Data
+          const allAnamneses = anamnesisSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredAnamnesis));
+          setRecentAnamneses(allAnamneses.slice(0, 5));
+          
+          // Calculate Stats
+          const uniquePatients = new Set(allAnamneses.map(record => record.nome_cliente)).size;
+          const currentMonth = new Date().getMonth();
+          const currentYear = new Date().getFullYear();
+          const thisMonthEvaluations = allAnamneses.filter(record => {
+            const recordDate = new Date(record.data_consulta);
+            return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
+          }).length;
+
+          setActivityData([
+            { name: "completedForms", value: anamnesisSnapshot.size },
+            { name: "generatedReports", value: reportsSnapshot.size },
+            { name: "comparisons", value: comparisonsSnapshot.size },
+          ]);
+
+          setDashboardStats({
+            totalPatients: uniquePatients,
+            totalEvaluations: anamnesisSnapshot.size,
+            totalReports: reportsSnapshot.size,
+            totalComparisons: comparisonsSnapshot.size,
+            pendingEvaluations: 0, // Placeholder
+            thisMonthEvaluations: thisMonthEvaluations
+          });
+
         } catch (error) {
-          console.error("Error fetching recent anamnesis records:", error);
-          toast({ title: t.errorTitle, description: "Could not fetch recent assessments.", variant: "destructive" });
+          console.error("Error fetching dashboard data:", error);
+          toast({ title: t.errorTitle, description: t.dashboardErrorLoading, variant: "destructive" });
         } finally {
           setLoading(false);
         }
       };
-
-      const fetchAllDataForStats = async () => {
-        try {
-            const anamnesisQuery = query(collection(firestore, "users", user.uid, "anamnesis"), where("professionalId", "==", user.uid));
-            const reportsQuery = query(collection(firestore, "users", user.uid, "reports"), where("professionalId", "==", user.uid));
-            const comparisonsQuery = query(collection(firestore, "users", user.uid, "comparisons"), where("professionalId", "==", user.uid));
-
-            const [anamnesisSnapshot, reportsSnapshot, comparisonsSnapshot] = await Promise.all([
-                getDocs(anamnesisQuery),
-                getDocs(reportsQuery),
-                getDocs(comparisonsQuery),
-            ]);
-
-            const allAnamneses = anamnesisSnapshot.docs.map(doc => doc.data() as AnamnesisFormValues);
-            const uniquePatients = new Set(allAnamneses.map(record => record.nome_cliente)).size;
-            const currentMonth = new Date().getMonth();
-            const currentYear = new Date().getFullYear();
-            const thisMonthEvaluations = allAnamneses.filter(record => {
-                const recordDate = new Date(record.data_consulta);
-                return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
-            }).length;
-
-            setActivityData([
-                { name: "completedForms", value: anamnesisSnapshot.size },
-                { name: "generatedReports", value: reportsSnapshot.size },
-                { name: "comparisons", value: comparisonsSnapshot.size },
-            ]);
-
-            setDashboardStats({
-                totalPatients: uniquePatients,
-                totalEvaluations: anamnesisSnapshot.size,
-                totalReports: reportsSnapshot.size,
-                totalComparisons: comparisonsSnapshot.size,
-                pendingEvaluations: 0,
-                thisMonthEvaluations: thisMonthEvaluations
-            });
-        } catch (error) {
-            console.error("Error fetching stats:", error);
-            toast({ title: t.errorTitle, description: t.dashboardErrorLoading, variant: "destructive" });
-        }
-      };
       
-      fetchRecentAnamneses();
-      fetchAllDataForStats();
+      fetchAllData();
     }
   }, [user, firestore, t.errorTitle, t.dashboardErrorLoading, toast]);
 
